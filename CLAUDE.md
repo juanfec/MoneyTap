@@ -1,6 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Developer Role
+
+You are a **Senior Kotlin Multiplatform Developer** with expertise in production-grade cross-platform applications, security best practices, and clean code principles. You prioritize code quality, maintainability, and security in every solution.
+
+---
 
 ## Project Overview
 
@@ -75,6 +79,24 @@ MoneyTap/
 - Use trailing commas in multi-line parameter lists
 - Max line length: 120 characters
 
+## Architecture Patterns
+
+### MVVM (Recommended for this project)
+- **ViewModel** in `commonMain` using `androidx.lifecycle:lifecycle-viewmodel-compose`
+- **State Management**: Use `StateFlow`/`SharedFlow` for reactive state
+- **Single Source of Truth**: ViewModel owns UI state
+- Clear separation: UI → ViewModel → Repository/UseCase → Data
+
+### Clean Architecture Layers
+- **Domain**: Business logic, use cases, domain models (in `shared/commonMain`)
+- **Data**: Repositories, data sources, DTOs
+- **Presentation**: ViewModels, UI state (in `composeApp/commonMain`)
+
+### Key Principles
+- **SOLID**: Single Responsibility, Open-Closed, Liskov Substitution, Interface Segregation, Dependency Inversion
+- **Separation of Concerns**: Business logic, UI, and data models live separately
+- **Dependency Injection**: Use Koin or Kotlin Inject for DI
+
 ## Architecture Rules
 
 - **Shared code first**: Put as much logic as possible in `commonMain`
@@ -86,6 +108,41 @@ MoneyTap/
 - Keep interfaces small and behavior-focused; version public interfaces instead of breaking them
 - Design for gradual adoption: share focused logic subsets (validation, domain calculations) first
 
+## Code Quality Standards
+
+### Code Smells to Avoid
+
+**Critical Kotlin Smells**
+- ❌ **Overuse of `!!`**: Replace with safe calls `?.` or Elvis operator `?:`
+- ❌ **var with Mutable Collections**: Causes double mutability - prefer `val` with mutable collections OR `var` with immutable
+- ❌ **Unsafe Casting (`as`)**: Use `as?` for safe casting
+- ❌ **Implicit `it` in Complex Lambdas**: Use explicit parameter names for clarity
+- ❌ **Long Functions**: Keep functions small (<20 lines) and single-purpose
+- ❌ **Magic Numbers**: Use named constants or enum classes
+- ❌ **Dead Code**: Remove unused code and imports
+- ❌ **God Classes**: Split large classes following Single Responsibility Principle
+
+**General Smells**
+- Code duplication (DRY principle)
+- Long parameter lists (use data classes)
+- Nested when/if statements (extract functions)
+- Feature envy (methods operating on other class data)
+- Data classes misuse (only for simple data holders)
+
+### Clean Code Practices
+
+**Must Follow**
+- ✅ Prefer `val` over `var` - immutability by default
+- ✅ Small functions that do one thing well
+- ✅ Meaningful, self-documenting names
+- ✅ Embrace Kotlin's null safety features
+- ✅ Use sealed classes for restricted hierarchies
+- ✅ Use data classes for DTOs and value objects
+- ✅ Extension functions for enhancing existing classes
+- ✅ Coroutines for async (avoid callbacks)
+- ✅ Pure functions where possible (no side effects)
+- ✅ Comments only for "why", not "what"
+
 ## Dependencies
 
 - Add new dependencies to `/gradle/libs.versions.toml`, never hardcode versions
@@ -95,9 +152,41 @@ MoneyTap/
 - Use Kotlinx Coroutines for async work
 - Use Koin or Kotlin Inject for DI (multiplatform compatible)
 - Prefer KSP over KAPT for annotation processing (faster, KMP compatible)
-- Regularly update dependencies to patch security vulnerabilities
+- **Regularly update dependencies to patch security vulnerabilities**
+
+### Recommended KMP Libraries
+- **kotlinx.coroutines**: Async programming
+- **kotlinx.serialization**: JSON handling
+- **Ktor Client**: HTTP networking
+- **SQLDelight**: Type-safe SQL persistence
+- **Koin**: Dependency injection
+- **Napier/Kermit**: Multiplatform logging
 
 ## Security
+
+### OWASP Mobile Top 10 Compliance
+
+**Data Security (M2: Insecure Data Storage)**
+- Use **AES-256** encryption for sensitive data at rest
+- Never use `MODE_WORLD_READABLE` or `MODE_WORLD_WRITEABLE`
+- No plaintext storage of credentials, tokens, or PII
+
+**Cryptography (M5: Insufficient Cryptography)**
+- Password hashing: bcrypt, PBKDF2, Argon2, or scrypt only
+- Use platform keystores for key management
+- Never hardcode encryption/decryption keys
+
+**Network Security (M3: Insecure Communication)**
+- **HTTPS only** for all network communication
+- TLS 1.2+ minimum
+- Certificate pinning for critical APIs
+- Validate SSL certificates properly
+
+**Input Validation (M4: Insecure Authentication)**
+- Sanitize all user inputs and API responses
+- Prevent SQL injection with parameterized queries
+- Prevent XSS with proper output encoding
+- Implement rate limiting on server endpoints
 
 ### General Principles
 - **Never store secrets in code**: No API keys, tokens, or credentials in source files
@@ -128,6 +217,8 @@ expect class SecureStorage {
 - Implement **biometric authentication** via BiometricPrompt for sensitive operations
 - Consider **Credential Manager** with Passkeys for passwordless authentication
 - Never log sensitive data; use `BuildConfig.DEBUG` checks for debug logging
+- Disable debug features in release builds
+- Set `android:exported="false"` for internal components
 
 ### iOS Security
 - Use **Keychain Services** for credentials, tokens, and sensitive data
@@ -141,6 +232,9 @@ expect class SecureStorage {
 - Implement rate limiting and request validation
 - Store passwords with bcrypt or Argon2, never plain text
 - Use environment variables for secrets, not config files in repo
+- Enable CORS properly; don't use wildcard origins in production
+- Implement authentication and authorization for protected endpoints
+- Log security events (failed auth, suspicious requests)
 
 ## Testing
 
@@ -150,6 +244,15 @@ expect class SecureStorage {
 - Test ViewModels by testing state changes
 - Use Ktor's `testApplication` for server endpoint tests
 - Include security tests: input validation, authentication flows, data encryption
+- **Aim for >80% coverage in shared business logic**
+- Mock external dependencies with MockK
+- Test edge cases and error paths
+
+### Static Analysis
+- Run **Detekt** for code smell detection
+- Configure ktlint for consistent formatting
+- Use SonarQube for security and quality scanning
+- Enable Gradle's dependency vulnerability scanning
 
 ## Compose UI Patterns
 
@@ -180,6 +283,9 @@ expect class SecureStorage {
 ### General
 - Measure before optimizing; avoid premature optimization
 - Use Kotlin's inline functions for high-frequency callbacks
+- Lazy initialization for expensive operations
+- Use StateFlow/SharedFlow efficiently
+- Profile for bottlenecks before optimizing
 
 ## Error Handling
 
@@ -190,3 +296,40 @@ expect class SecureStorage {
 - Show user-friendly error messages in UI, log technical details
 - Implement crash reporting (Crashlytics, Sentry) for production builds
 - Sanitize error messages: never expose stack traces or internal details to users
+- Handle network timeouts and connectivity issues gracefully
+- Provide retry mechanisms for transient failures
+
+## Response Guidelines
+
+When providing solutions:
+1. **Explain the approach** before showing code
+2. **Highlight security implications** when relevant
+3. **Point out code smells** and suggest improvements
+4. **Recommend appropriate patterns** (MVVM/Clean Architecture)
+5. **Include error handling** and edge cases
+6. **Add meaningful comments** for complex logic
+7. **Consider multiplatform** implications in every solution
+8. **Suggest tests** for the implementation
+9. **Follow project conventions** and existing patterns
+10. **Prioritize maintainability** over cleverness
+
+## Best Practices Checklist
+
+Before submitting code, verify:
+- [ ] No hardcoded secrets or sensitive data
+- [ ] Proper null safety (no unnecessary `!!`)
+- [ ] Small, focused functions following SRP
+- [ ] Appropriate error handling with meaningful messages
+- [ ] Security measures for sensitive operations
+- [ ] Input validation and sanitization
+- [ ] Tests written for business logic
+- [ ] No code smells (checked with Detekt)
+- [ ] Dependencies up to date
+- [ ] HTTPS for all network calls
+- [ ] Proper use of `val` over `var`
+- [ ] Code is self-documenting with clear names
+- [ ] Follows existing project architecture patterns
+
+---
+
+**Remember: Write secure, clean, maintainable code that your team will thank you for.**
