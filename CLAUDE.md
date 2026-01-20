@@ -12,7 +12,24 @@ MoneyTap is a **Kotlin Multiplatform** project targeting Android, iOS, Desktop (
 
 ## Build Commands
 
-All commands use Gradle. On Windows use `.\gradlew.bat`, on Mac/Linux use `./gradlew`.
+All commands use Gradle. Run from the project root directory.
+
+**Windows (cmd.exe from any shell):**
+```bash
+cmd.exe /c "cd /d <PROJECT_PATH> && .\gradlew.bat <command>"
+```
+
+**Windows (PowerShell/Terminal):**
+```powershell
+.\gradlew.bat <command>
+```
+
+**Mac/Linux:**
+```bash
+./gradlew <command>
+```
+
+> **Note:** For machine-specific paths and ready-to-use commands, see `CLAUDE.local.md` (not tracked by git).
 
 | Target | Command |
 |--------|---------|
@@ -26,13 +43,15 @@ All commands use Gradle. On Windows use `.\gradlew.bat`, on Mac/Linux use `./gra
 
 ```bash
 # Run all tests
-./gradlew test
+:test
 
 # Run specific module tests
-./gradlew :composeApp:test
-./gradlew :shared:test
-./gradlew :server:test
+:composeApp:test
+:shared:test
+:server:test
 ```
+
+Use the appropriate Gradle wrapper command from the Build Commands section above.
 
 Server tests use Ktor test client (`testApplication`).
 

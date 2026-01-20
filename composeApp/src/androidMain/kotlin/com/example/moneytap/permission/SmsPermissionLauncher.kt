@@ -12,7 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 
 @Composable
-fun rememberSmsPermissionState(
+actual fun rememberSmsPermissionState(
     onPermissionResult: (granted: Boolean, shouldShowRationale: Boolean) -> Unit,
 ): SmsPermissionState {
     val context = LocalContext.current
@@ -45,8 +45,3 @@ fun rememberSmsPermissionState(
         )
     }
 }
-
-class SmsPermissionState(
-    val launchPermissionRequest: () -> Unit,
-    val openSettings: () -> Unit,
-)
