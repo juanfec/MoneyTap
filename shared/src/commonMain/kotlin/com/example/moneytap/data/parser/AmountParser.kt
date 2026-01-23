@@ -9,13 +9,12 @@ package com.example.moneytap.data.parser
 object AmountParser {
 
     /**
-     * Parses a Colombian-formatted amount string to a Double.
+     * Parses an amount string to a Double, auto-detecting the format.
      *
-     * Handles formats like:
-     * - "1.234.567,89" → 1234567.89
-     * - "1234567" → 1234567.0
-     * - "1.234.567" → 1234567.0
-     * - "$1.234.567,89" → 1234567.89
+     * Handles both Colombian and US formats:
+     * - Colombian: "1.234.567,89" → 1234567.89 (period=thousands, comma=decimal)
+     * - US: "1,234,567.89" → 1234567.89 (comma=thousands, period=decimal)
+     * - Plain: "1234567" → 1234567.0
      *
      * @param numStr The amount string to parse
      * @return The parsed amount as Double, or null if parsing fails
@@ -24,11 +23,51 @@ object AmountParser {
         val cleaned = numStr
             .replace("$", "")
             .replace(" ", "")
-            .replace(".", "")
-            .replace(",", ".")
             .trim()
 
-        return cleaned.toDoubleOrNull()
+        if (cleaned.isEmpty()) return null
+
+        // Detect format by checking last separator position
+        val lastComma = cleaned.lastIndexOf(',')
+        val lastPeriod = cleaned.lastIndexOf('.')
+
+        val normalized = when {
+            // No separators - plain number
+            lastComma == -1 && lastPeriod == -1 -> cleaned
+
+            // Only periods (Colombian thousands or US decimal)
+            lastComma == -1 -> {
+                // If period is followed by exactly 2 digits, treat as decimal
+                if (cleaned.length - lastPeriod == 3) {
+                    cleaned // US decimal format, keep as is
+                } else {
+                    cleaned.replace(".", "") // Colombian thousands separator
+                }
+            }
+
+            // Only commas (US thousands or Colombian decimal)
+            lastPeriod == -1 -> {
+                // If comma is followed by exactly 2 digits, treat as decimal (Colombian)
+                if (cleaned.length - lastComma == 3) {
+                    cleaned.replace(",", ".") // Colombian decimal
+                } else {
+                    cleaned.replace(",", "") // US thousands separator
+                }
+            }
+
+            // Both separators present - determine by position
+            lastPeriod > lastComma -> {
+                // Period is last separator → US format (comma=thousands, period=decimal)
+                cleaned.replace(",", "")
+            }
+
+            else -> {
+                // Comma is last separator → Colombian format (period=thousands, comma=decimal)
+                cleaned.replace(".", "").replace(",", ".")
+            }
+        }
+
+        return normalized.toDoubleOrNull()
     }
 
     /**

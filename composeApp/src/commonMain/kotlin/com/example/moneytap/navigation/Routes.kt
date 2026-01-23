@@ -11,10 +11,6 @@ sealed interface Route {
     @Serializable
     data object SmsInbox : Route
 
-    // Add more routes here as needed, for example:
-    // @Serializable
-    // data object Settings : Route
-    //
-    // @Serializable
-    // data class SmsDetail(val messageId: Long) : Route
+    @Serializable
+    data object SpendingSummary : Route
 }

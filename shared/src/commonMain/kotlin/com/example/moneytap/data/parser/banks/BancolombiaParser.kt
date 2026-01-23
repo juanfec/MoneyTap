@@ -22,6 +22,8 @@ class BancolombiaParser : BankSmsParser {
     override val senderIds: List<String> = listOf(
         "Bancolombia",
         "85432",
+        "87400",
+        "85540",
     )
 
     // Colombian amount pattern: $150.000 or $1.500.000,50
@@ -86,24 +88,23 @@ class BancolombiaParser : BankSmsParser {
     }
 
     private fun determineTransactionType(smsBody: String): TransactionType? {
+        val lowerBody = smsBody.lowercase()
         return when {
-            smsBody.contains("compra", ignoreCase = true) -> TransactionType.DEBIT
-            smsBody.contains("pago", ignoreCase = true) -> TransactionType.DEBIT
-            smsBody.contains("retiro", ignoreCase = true) -> TransactionType.WITHDRAWAL
-            smsBody.contains("transferencia", ignoreCase = true) -> {
-                if (smsBody.contains("recibiste", ignoreCase = true) ||
-                    smsBody.contains("le consignaron", ignoreCase = true)
-                ) {
+            lowerBody.contains("compra") -> TransactionType.DEBIT
+            lowerBody.contains("pago") || lowerBody.contains("pagaste") ||
+                lowerBody.contains("pagó") -> TransactionType.DEBIT
+            lowerBody.contains("retiro") || lowerBody.contains("retiraste") -> TransactionType.WITHDRAWAL
+            lowerBody.contains("transferencia") || lowerBody.contains("transferiste") -> {
+                if (lowerBody.contains("recibiste") || lowerBody.contains("le consignaron")) {
                     TransactionType.CREDIT
                 } else {
                     TransactionType.TRANSFER
                 }
             }
-            smsBody.contains("consignación", ignoreCase = true) ||
-                smsBody.contains("consignacion", ignoreCase = true) -> TransactionType.CREDIT
-            smsBody.contains("abono", ignoreCase = true) -> TransactionType.CREDIT
-            smsBody.contains("débito", ignoreCase = true) ||
-                smsBody.contains("debito", ignoreCase = true) -> TransactionType.DEBIT
+            lowerBody.contains("consignación") || lowerBody.contains("consignacion") ||
+                lowerBody.contains("recibiste") -> TransactionType.CREDIT
+            lowerBody.contains("abono") -> TransactionType.CREDIT
+            lowerBody.contains("débito") || lowerBody.contains("debito") -> TransactionType.DEBIT
             else -> null
         }
     }

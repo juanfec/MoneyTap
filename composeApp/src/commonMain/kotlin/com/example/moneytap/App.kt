@@ -8,7 +8,9 @@ import androidx.navigation.compose.rememberNavController
 import com.example.moneytap.navigation.Route
 import com.example.moneytap.permission.rememberSmsPermissionState
 import com.example.moneytap.presentation.viewmodel.SmsViewModel
+import com.example.moneytap.presentation.viewmodel.SpendingViewModel
 import com.example.moneytap.ui.screen.SmsInboxScreen
+import com.example.moneytap.ui.screen.SpendingSummaryScreen
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -22,7 +24,7 @@ fun App() {
 
         NavHost(
             navController = navController,
-            startDestination = Route.SmsInbox,
+            startDestination = Route.SpendingSummary,
         ) {
             composable<Route.SmsInbox> {
                 val viewModel: SmsViewModel = koinViewModel()
@@ -37,12 +39,19 @@ fun App() {
                 )
             }
 
-            // Add more screens here as needed:
-            // composable<Route.Settings> { SettingsScreen() }
-            // composable<Route.SmsDetail> { backStackEntry ->
-            //     val route = backStackEntry.toRoute<Route.SmsDetail>()
-            //     SmsDetailScreen(messageId = route.messageId)
-            // }
+            composable<Route.SpendingSummary> {
+                val viewModel: SpendingViewModel = koinViewModel()
+                val permissionState = rememberSmsPermissionState { granted, shouldShowRationale ->
+                    viewModel.onPermissionResult(granted, shouldShowRationale)
+                }
+
+                SpendingSummaryScreen(
+                    viewModel = viewModel,
+                    onRequestPermission = { permissionState.launchPermissionRequest() },
+                    onOpenSettings = { permissionState.openSettings() },
+                    onNavigateBack = { navController.popBackStack() },
+                )
+            }
         }
     }
 }

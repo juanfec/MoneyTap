@@ -1,6 +1,7 @@
 package com.example.moneytap.data.parser
 
 import com.example.moneytap.data.parser.banks.BancolombiaParser
+import com.example.moneytap.data.parser.banks.BancoOccidenteParser
 import com.example.moneytap.data.parser.banks.DaviplataParser
 import com.example.moneytap.data.parser.banks.NequiParser
 
@@ -18,6 +19,7 @@ object BankSmsParserFactory {
 
     private val parsers: List<BankSmsParser> = listOf(
         BancolombiaParser(),
+        BancoOccidenteParser(),
         NequiParser(),
         DaviplataParser(),
     )

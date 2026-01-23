@@ -24,7 +24,13 @@ class ParseSmsTransactionsUseCase(
      */
     suspend operator fun invoke(limit: Int = 100): Result<List<TransactionInfo>> {
         return smsRepository.getInboxMessages(limit).map { messages ->
-            messages.mapNotNull { sms -> parseMessage(sms) }
+            println("DEBUG: Total SMS messages fetched: ${messages.size}")
+            messages.take(10).forEach { sms ->
+                println("DEBUG: SMS sender='${sms.sender}', canParse=${BankSmsParserFactory.getParser(sms.sender) != null}")
+            }
+            val parsed = messages.mapNotNull { sms -> parseMessage(sms) }
+            println("DEBUG: Parsed transactions: ${parsed.size}")
+            parsed
         }
     }
 

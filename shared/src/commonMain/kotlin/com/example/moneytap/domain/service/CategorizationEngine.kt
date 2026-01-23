@@ -1,0 +1,132 @@
+package com.example.moneytap.domain.service
+
+import com.example.moneytap.data.categorization.MerchantDictionary
+import com.example.moneytap.domain.model.CategorizedTransaction
+import com.example.moneytap.domain.model.Category
+import com.example.moneytap.domain.model.MatchType
+import com.example.moneytap.domain.model.TransactionInfo
+import com.example.moneytap.util.StringSimilarity
+
+/**
+ * Engine for categorizing transactions using a 4-layer matching approach:
+ * 1. Exact match - Direct lookup in merchant dictionary
+ * 2. Fuzzy match - Levenshtein similarity > 85%
+ * 3. Keyword match - Search for category keywords in merchant/description
+ * 4. Default - Assign UNCATEGORIZED when no match found
+ */
+class CategorizationEngine {
+
+    companion object {
+        private const val EXACT_MATCH_CONFIDENCE = 0.95
+        private const val FUZZY_MATCH_THRESHOLD = 0.85
+        private const val KEYWORD_MATCH_CONFIDENCE = 0.7
+        private const val DEFAULT_CONFIDENCE = 0.0
+    }
+
+    /**
+     * Categorizes a single transaction using the 4-layer matching engine.
+     *
+     * @param transaction The transaction to categorize
+     * @return A [CategorizedTransaction] with the assigned category and confidence
+     */
+    fun categorize(transaction: TransactionInfo): CategorizedTransaction {
+        val merchantName = transaction.merchant?.let {
+            StringSimilarity.normalizeMerchantName(it)
+        } ?: ""
+
+        val description = transaction.description?.uppercase() ?: ""
+
+        // Layer 1: Exact match
+        exactMatch(merchantName)?.let { category ->
+            return CategorizedTransaction(
+                transaction = transaction,
+                category = category,
+                confidence = EXACT_MATCH_CONFIDENCE,
+                matchType = MatchType.EXACT,
+            )
+        }
+
+        // Layer 2: Fuzzy match
+        fuzzyMatch(merchantName)?.let { (category, similarity) ->
+            return CategorizedTransaction(
+                transaction = transaction,
+                category = category,
+                confidence = similarity * 0.9,
+                matchType = MatchType.FUZZY,
+            )
+        }
+
+        // Layer 3: Keyword match
+        keywordMatch(merchantName, description)?.let { category ->
+            return CategorizedTransaction(
+                transaction = transaction,
+                category = category,
+                confidence = KEYWORD_MATCH_CONFIDENCE,
+                matchType = MatchType.KEYWORD,
+            )
+        }
+
+        // Layer 4: Default
+        return CategorizedTransaction(
+            transaction = transaction,
+            category = Category.UNCATEGORIZED,
+            confidence = DEFAULT_CONFIDENCE,
+            matchType = MatchType.DEFAULT,
+        )
+    }
+
+    /**
+     * Categorizes a list of transactions.
+     *
+     * @param transactions The transactions to categorize
+     * @return List of categorized transactions
+     */
+    fun categorizeAll(transactions: List<TransactionInfo>): List<CategorizedTransaction> =
+        transactions.map { categorize(it) }
+
+    /**
+     * Layer 1: Exact match lookup in merchant dictionary.
+     */
+    private fun exactMatch(merchantName: String): Category? {
+        if (merchantName.isBlank()) return null
+        return MerchantDictionary.merchantToCategory[merchantName]
+    }
+
+    /**
+     * Layer 2: Fuzzy match using Levenshtein similarity.
+     * Returns the best match above the threshold, if any.
+     */
+    private fun fuzzyMatch(merchantName: String): Pair<Category, Double>? {
+        if (merchantName.isBlank()) return null
+
+        var bestMatch: Pair<Category, Double>? = null
+        var bestSimilarity = 0.0
+
+        for (knownMerchant in MerchantDictionary.getAllMerchantNames()) {
+            val similarity = StringSimilarity.similarity(merchantName, knownMerchant)
+            if (similarity >= FUZZY_MATCH_THRESHOLD && similarity > bestSimilarity) {
+                bestSimilarity = similarity
+                MerchantDictionary.merchantToCategory[knownMerchant]?.let { category ->
+                    bestMatch = category to similarity
+                }
+            }
+        }
+
+        return bestMatch
+    }
+
+    /**
+     * Layer 3: Keyword match - search for category keywords in text.
+     */
+    private fun keywordMatch(merchantName: String, description: String): Category? {
+        val combinedText = "$merchantName $description"
+
+        for ((keyword, category) in MerchantDictionary.keywordToCategory) {
+            if (StringSimilarity.containsIgnoreCase(combinedText, keyword)) {
+                return category
+            }
+        }
+
+        return null
+    }
+}
