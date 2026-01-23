@@ -53,7 +53,29 @@ class BancolombiaParser : BankSmsParser {
         RegexOption.IGNORE_CASE,
     )
 
+    // Keywords that indicate summary/informational messages, NOT actual transactions
+    private val exclusionKeywords = listOf(
+        "suman tus gastos",
+        "suman tus ingresos",
+        "#tuinforme",
+        "tus informes",
+        "tu informe",
+        "durante el 2024",
+        "durante el 2025",
+        "durante el 2026",
+        "resumen del mes",
+        "resumen anual",
+        "movimientos del mes",
+    )
+
     override fun parse(smsBody: String, timestamp: Instant): TransactionInfo? {
+        // Check for summary/informational messages first - these are NOT transactions
+        val lowerBody = smsBody.lowercase()
+        if (exclusionKeywords.any { lowerBody.contains(it) }) {
+            println("DEBUG: Bancolombia message excluded (summary): ${smsBody.take(50)}...")
+            return null
+        }
+
         // Extract the transaction amount (first amount in the message)
         val amountMatch = amountPattern.find(smsBody) ?: return null
         val amount = AmountParser.parseColombianAmount(amountMatch.groupValues[1]) ?: return null

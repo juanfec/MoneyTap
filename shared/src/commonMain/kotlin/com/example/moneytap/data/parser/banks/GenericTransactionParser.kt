@@ -50,6 +50,41 @@ class GenericTransactionParser : BankSmsParser {
         "te pagaron", "le pagaron",
     )
 
+    // Keywords/patterns that indicate the message is a summary or informational, NOT a transaction
+    private val exclusionKeywords = listOf(
+        // Yearly/monthly summaries
+        "suman tus gastos",
+        "suman tus ingresos",
+        "resumen del mes",
+        "resumen mensual",
+        "resumen anual",
+        "balance del mes",
+        "balance anual",
+        "durante el 2024",
+        "durante el 2025",
+        "durante el 2026",
+        "#tuinforme",
+        "tus informes",
+        "tu informe",
+        // Marketing/promotional
+        "aprovecha",
+        "promoción",
+        "promocion",
+        "descuento especial",
+        "nuevo beneficio",
+        // Account alerts (not transactions)
+        "tu clave dinámica",
+        "tu clave dinamica",
+        "cambio de clave",
+        "actualiza tus datos",
+        "encuesta",
+        // OTP codes
+        "código de verificación",
+        "codigo de verificacion",
+        "código otp",
+        "codigo otp",
+    )
+
     // Amount patterns - multiple formats
     private val amountPatterns = listOf(
         // $150.000 or $150,000 or $150.000,00
@@ -83,9 +118,19 @@ class GenericTransactionParser : BankSmsParser {
     /**
      * Checks if the message body contains transaction-related keywords.
      * This is used to determine if this parser should attempt to parse the message.
+     *
+     * Returns false for summary/informational messages that aren't actual transactions.
      */
     fun canParseBody(body: String): Boolean {
         val lowerBody = body.lowercase()
+
+        // First check exclusions - these are NOT transactions
+        val isExcluded = exclusionKeywords.any { lowerBody.contains(it) }
+        if (isExcluded) {
+            println("DEBUG: Message excluded by keyword filter: ${body.take(50)}...")
+            return false
+        }
+
         val hasExpenseKeyword = expenseKeywords.any { lowerBody.contains(it) }
         val hasIncomeKeyword = incomeKeywords.any { lowerBody.contains(it) }
         val hasAmount = amountPatterns.any { it.find(body) != null }
