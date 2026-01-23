@@ -86,11 +86,17 @@ class SpendingViewModel(
     }
 
     fun loadSpending(limit: Int = 100) {
+        println("DEBUG SpendingVM: loadSpending called with limit=$limit")
         viewModelScope.launch {
+            println("DEBUG SpendingVM: Starting to load spending...")
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             getSpendingByCategoryUseCase(limit)
                 .onSuccess { summary ->
+                    println("DEBUG SpendingVM: SUCCESS - transactions=${summary.transactionCount}, total=${summary.totalSpending}")
+                    summary.byCategory.forEach { (category, spending) ->
+                        println("DEBUG SpendingVM: Category ${category.name}: ${spending.transactionCount} txns, $${spending.totalAmount}")
+                    }
                     val error = if (summary.transactionCount == 0) {
                         SpendingError.NoTransactions
                     } else {
@@ -105,6 +111,7 @@ class SpendingViewModel(
                     }
                 }
                 .onFailure { exception ->
+                    println("DEBUG SpendingVM: FAILURE - ${exception.message}")
                     val error = when (exception) {
                         is SmsException -> {
                             when (val smsError = exception.error) {

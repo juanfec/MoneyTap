@@ -3,6 +3,7 @@ package com.example.moneytap.data.parser
 import com.example.moneytap.data.parser.banks.BancolombiaParser
 import com.example.moneytap.data.parser.banks.BancoOccidenteParser
 import com.example.moneytap.data.parser.banks.DaviplataParser
+import com.example.moneytap.data.parser.banks.GenericTransactionParser
 import com.example.moneytap.data.parser.banks.NequiParser
 
 /**
@@ -10,6 +11,9 @@ import com.example.moneytap.data.parser.banks.NequiParser
  *
  * This factory maintains a registry of all available bank parsers and provides
  * methods to select the correct parser for a given SMS sender ID.
+ *
+ * It also provides a fallback generic parser for messages that don't match
+ * any known bank but contain transaction-related keywords.
  *
  * To add support for a new bank:
  * 1. Create a new parser class implementing [BankSmsParser]
@@ -24,6 +28,8 @@ object BankSmsParserFactory {
         DaviplataParser(),
     )
 
+    private val genericParser = GenericTransactionParser()
+
     /**
      * Finds the appropriate parser for the given SMS sender ID.
      *
@@ -34,7 +40,22 @@ object BankSmsParserFactory {
         parsers.find { it.canHandle(senderId) }
 
     /**
-     * Returns all registered parsers.
+     * Returns the generic fallback parser that can attempt to parse
+     * any message containing transaction keywords.
+     */
+    fun getGenericParser(): GenericTransactionParser = genericParser
+
+    /**
+     * Checks if the message body can be parsed by the generic parser.
+     * Use this to determine if fallback parsing should be attempted.
+     *
+     * @param body The SMS message body
+     * @return true if the message contains transaction-related keywords and an amount
+     */
+    fun canGenericParse(body: String): Boolean = genericParser.canParseBody(body)
+
+    /**
+     * Returns all registered parsers (excluding generic fallback).
      *
      * Useful for testing or displaying supported banks.
      */

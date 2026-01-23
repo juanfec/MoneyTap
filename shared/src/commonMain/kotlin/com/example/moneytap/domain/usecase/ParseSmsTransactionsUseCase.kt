@@ -26,7 +26,9 @@ class ParseSmsTransactionsUseCase(
         return smsRepository.getInboxMessages(limit).map { messages ->
             println("DEBUG: Total SMS messages fetched: ${messages.size}")
             messages.take(10).forEach { sms ->
-                println("DEBUG: SMS sender='${sms.sender}', canParse=${BankSmsParserFactory.getParser(sms.sender) != null}")
+                val hasParser = BankSmsParserFactory.getParser(sms.sender) != null
+                val canGeneric = BankSmsParserFactory.canGenericParse(sms.body)
+                println("DEBUG: SMS sender='${sms.sender}', hasParser=$hasParser, canGenericParse=$canGeneric")
             }
             val parsed = messages.mapNotNull { sms -> parseMessage(sms) }
             println("DEBUG: Parsed transactions: ${parsed.size}")
@@ -37,12 +39,26 @@ class ParseSmsTransactionsUseCase(
     /**
      * Attempts to parse a single SMS message into a transaction.
      *
+     * First tries to find a specific bank parser for the sender.
+     * If no specific parser exists, falls back to the generic parser
+     * which looks for transaction keywords in the message body.
+     *
      * @param sms The SMS message to parse
-     * @return Parsed [TransactionInfo] if the message is a recognized bank transaction, null otherwise
+     * @return Parsed [TransactionInfo] if the message is a recognized transaction, null otherwise
      */
     fun parseMessage(sms: SmsMessage): TransactionInfo? {
-        val parser = BankSmsParserFactory.getParser(sms.sender) ?: return null
-        return parser.parse(sms.body, sms.timestamp)
+        // First, try to find a specific bank parser
+        val specificParser = BankSmsParserFactory.getParser(sms.sender)
+        if (specificParser != null) {
+            return specificParser.parse(sms.body, sms.timestamp)
+        }
+
+        // Fallback: try generic parser if message contains transaction keywords
+        if (BankSmsParserFactory.canGenericParse(sms.body)) {
+            return BankSmsParserFactory.getGenericParser().parse(sms.body, sms.timestamp)
+        }
+
+        return null
     }
 
     /**
@@ -60,8 +76,18 @@ class ParseSmsTransactionsUseCase(
         body: String,
         timestamp: kotlinx.datetime.Instant,
     ): TransactionInfo? {
-        val parser = BankSmsParserFactory.getParser(senderId) ?: return null
-        return parser.parse(body, timestamp)
+        // Try specific parser first
+        val specificParser = BankSmsParserFactory.getParser(senderId)
+        if (specificParser != null) {
+            return specificParser.parse(body, timestamp)
+        }
+
+        // Fallback to generic parser
+        if (BankSmsParserFactory.canGenericParse(body)) {
+            return BankSmsParserFactory.getGenericParser().parse(body, timestamp)
+        }
+
+        return null
     }
 
     /**
