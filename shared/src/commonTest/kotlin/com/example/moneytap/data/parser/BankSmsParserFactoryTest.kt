@@ -1,5 +1,6 @@
 package com.example.moneytap.data.parser
 
+import com.example.moneytap.data.parser.banks.BancoOccidenteParser
 import com.example.moneytap.data.parser.banks.BancolombiaParser
 import com.example.moneytap.data.parser.banks.DaviplataParser
 import com.example.moneytap.data.parser.banks.NequiParser
@@ -84,16 +85,24 @@ class BankSmsParserFactoryTest {
     @Test
     fun `getAllParsers returns all registered parsers`() {
         val parsers = BankSmsParserFactory.getAllParsers()
-        assertEquals(3, parsers.size)
+        assertEquals(4, parsers.size)
     }
 
     @Test
     fun `getSupportedBanks returns all bank names`() {
         val banks = BankSmsParserFactory.getSupportedBanks()
-        assertEquals(3, banks.size)
+        assertEquals(4, banks.size)
         assertTrue(banks.contains("Bancolombia"))
         assertTrue(banks.contains("Nequi"))
         assertTrue(banks.contains("Daviplata"))
+        assertTrue(banks.contains("Banco de Occidente"))
+    }
+
+    @Test
+    fun `getParser returns BancoOccidenteParser for 85722 short code`() {
+        val parser = BankSmsParserFactory.getParser("85722")
+        assertNotNull(parser)
+        assertIs<BancoOccidenteParser>(parser)
     }
 
     @Test

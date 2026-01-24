@@ -46,6 +46,7 @@ fun SpendingSummaryScreen(
     onRequestPermission: () -> Unit,
     onOpenSettings: () -> Unit,
     onNavigateBack: (() -> Unit)? = null,
+    onCategoryClick: (categoryName: String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -76,6 +77,7 @@ fun SpendingSummaryScreen(
             onRequestPermission = { viewModel.checkPermission() },
             onOpenSettings = onOpenSettings,
             onRefresh = { viewModel.refresh() },
+            onCategoryClick = onCategoryClick,
             modifier = Modifier.padding(paddingValues),
         )
     }
@@ -87,6 +89,7 @@ private fun SpendingSummaryContent(
     onRequestPermission: () -> Unit,
     onOpenSettings: () -> Unit,
     onRefresh: () -> Unit,
+    onCategoryClick: (categoryName: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -123,6 +126,7 @@ private fun SpendingSummaryContent(
                 SpendingListContent(
                     summary = uiState.summary,
                     onRefresh = onRefresh,
+                    onCategoryClick = onCategoryClick,
                 )
             }
             else -> {
@@ -139,6 +143,7 @@ private fun SpendingSummaryContent(
 private fun SpendingListContent(
     summary: SpendingSummary,
     onRefresh: () -> Unit,
+    onCategoryClick: (categoryName: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -166,6 +171,7 @@ private fun SpendingListContent(
             CategorySpendingCard(
                 categorySpending = categorySpending,
                 totalSpending = summary.totalSpending,
+                onClick = { onCategoryClick(categorySpending.category.name) },
                 modifier = Modifier.fillMaxWidth(),
             )
         }

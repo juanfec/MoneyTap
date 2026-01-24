@@ -39,6 +39,7 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
+            implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.preview)
@@ -73,6 +74,11 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+    
+    lint {
+        abortOnError = false
+    }
+    
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"

@@ -32,9 +32,9 @@ class BancoOccidenteParser : BankSmsParser {
         RegexOption.IGNORE_CASE,
     )
 
-    // Merchant pattern: "en MERCHANT por" or "en MERCHANT."
+    // Merchant pattern: "en MERCHANT por $" - uses "por $" to avoid matching "POR" in merchant names
     private val merchantPattern = Regex(
-        """\ben\s+(.+?)\s+por\s""",
+        """\ben\s+(.+?)\s+por\s+\$""",
         RegexOption.IGNORE_CASE,
     )
 

@@ -18,7 +18,7 @@ object MerchantDictionary {
             "EXITO", "ALMACENES EXITO", "CARULLA", "JUMBO", "D1", "TIENDAS D1",
             "ARA", "TIENDAS ARA", "OLIMPICA", "SUPERTIENDAS OLIMPICA",
             "ALKOSTO", "MAKRO", "HOMECENTER", "EURO", "SURTIMAX",
-            "LA 14", "COLSUBSIDIO", "COORATIENDAS", "MERQUEO",
+            "LA 14", "COLSUBSIDIO", "COORATIENDAS", "MERQUEO", "SUPERM MAS POR MENOS",
         ).forEach { put(it, Category.GROCERIES) }
 
         // Restaurants & Food Delivery

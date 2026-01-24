@@ -13,4 +13,13 @@ sealed interface Route {
 
     @Serializable
     data object SpendingSummary : Route
+
+    @Serializable
+    data class CategoryTransactions(val categoryName: String) : Route
+
+    @Serializable
+    data class TransactionDetail(
+        val categoryName: String,
+        val transactionIndex: Int,
+    ) : Route
 }

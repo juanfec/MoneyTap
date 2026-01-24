@@ -8,16 +8,18 @@ import com.example.moneytap.domain.model.TransactionInfo
 import com.example.moneytap.util.StringSimilarity
 
 /**
- * Engine for categorizing transactions using a 4-layer matching approach:
+ * Engine for categorizing transactions using a 5-layer matching approach:
  * 1. Exact match - Direct lookup in merchant dictionary
- * 2. Fuzzy match - Levenshtein similarity > 85%
- * 3. Keyword match - Search for category keywords in merchant/description
- * 4. Default - Assign UNCATEGORIZED when no match found
+ * 2. Substring match - Known merchant contained in extracted name (e.g., "MAS POR MENOS" in "SUPERM MAS POR MENOS C")
+ * 3. Fuzzy match - Levenshtein similarity > 85%
+ * 4. Keyword match - Search for category keywords in merchant/description
+ * 5. Default - Assign UNCATEGORIZED when no match found
  */
 class CategorizationEngine {
 
     companion object {
         private const val EXACT_MATCH_CONFIDENCE = 0.95
+        private const val SUBSTRING_MATCH_CONFIDENCE = 0.9
         private const val FUZZY_MATCH_THRESHOLD = 0.85
         private const val KEYWORD_MATCH_CONFIDENCE = 0.7
         private const val DEFAULT_CONFIDENCE = 0.0
@@ -33,7 +35,6 @@ class CategorizationEngine {
         val merchantName = transaction.merchant?.let {
             StringSimilarity.normalizeMerchantName(it)
         } ?: ""
-
         val description = transaction.description?.uppercase() ?: ""
 
         // Layer 1: Exact match
@@ -46,7 +47,17 @@ class CategorizationEngine {
             )
         }
 
-        // Layer 2: Fuzzy match
+        // Layer 2: Substring match - check if any known merchant is contained in the extracted name
+        substringMatch(merchantName)?.let { category ->
+            return CategorizedTransaction(
+                transaction = transaction,
+                category = category,
+                confidence = SUBSTRING_MATCH_CONFIDENCE,
+                matchType = MatchType.FUZZY, // Using FUZZY since it's a close match
+            )
+        }
+
+        // Layer 3: Fuzzy match
         fuzzyMatch(merchantName)?.let { (category, similarity) ->
             return CategorizedTransaction(
                 transaction = transaction,
@@ -56,7 +67,7 @@ class CategorizationEngine {
             )
         }
 
-        // Layer 3: Keyword match
+        // Layer 4: Keyword match
         keywordMatch(merchantName, description)?.let { category ->
             return CategorizedTransaction(
                 transaction = transaction,
@@ -66,7 +77,7 @@ class CategorizationEngine {
             )
         }
 
-        // Layer 4: Default
+        // Layer 5: Default
         return CategorizedTransaction(
             transaction = transaction,
             category = Category.UNCATEGORIZED,
@@ -93,7 +104,40 @@ class CategorizationEngine {
     }
 
     /**
-     * Layer 2: Fuzzy match using Levenshtein similarity.
+     * Layer 2: Substring match - finds if any known merchant name is contained
+     * within the extracted merchant name, or vice versa.
+     *
+     * This handles cases like:
+     * - "SUPERM MAS POR MENOS C" containing "SUPERM MAS POR MENOS"
+     * - "MAS POR MENOS" being contained in "SUPERM MAS POR MENOS"
+     * 
+     * Returns the longest matching merchant to prefer more specific matches.
+     */
+    private fun substringMatch(merchantName: String): Category? {
+        if (merchantName.isBlank()) return null
+
+        var bestMatch: Category? = null
+        var bestMatchLength = 0
+
+        for (knownMerchant in MerchantDictionary.getAllMerchantNames()) {
+            // Check bidirectional substring match
+            val isMatch = merchantName.contains(knownMerchant, ignoreCase = true) || 
+                         knownMerchant.contains(merchantName, ignoreCase = true)
+            
+            if (isMatch) {
+                // Prefer longer matches (more specific)
+                if (knownMerchant.length > bestMatchLength) {
+                    bestMatchLength = knownMerchant.length
+                    bestMatch = MerchantDictionary.merchantToCategory[knownMerchant]
+                }
+            }
+        }
+
+        return bestMatch
+    }
+
+    /**
+     * Layer 3: Fuzzy match using Levenshtein similarity.
      * Returns the best match above the threshold, if any.
      */
     private fun fuzzyMatch(merchantName: String): Pair<Category, Double>? {
