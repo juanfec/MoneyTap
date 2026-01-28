@@ -2,6 +2,7 @@ package com.example.moneytap
 
 import android.app.Application
 import com.example.moneytap.di.categorizationModule
+import com.example.moneytap.di.databaseModule
 import com.example.moneytap.di.smsAndroidModule
 import com.example.moneytap.di.smsModule
 import org.koin.android.ext.koin.androidContext
@@ -16,7 +17,7 @@ class MoneyTapApplication : Application() {
         startKoin {
             androidLogger(Level.ERROR)
             androidContext(this@MoneyTapApplication)
-            modules(smsAndroidModule, smsModule, categorizationModule)
+            modules(smsAndroidModule, smsModule, categorizationModule, databaseModule)
         }
     }
 }

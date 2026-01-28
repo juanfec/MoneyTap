@@ -50,12 +50,13 @@ class ParseSmsTransactionsUseCase(
         // First, try to find a specific bank parser
         val specificParser = BankSmsParserFactory.getParser(sms.sender)
         if (specificParser != null) {
-            return specificParser.parse(sms.body, sms.timestamp)
+            return specificParser.parse(sms.body, sms.timestamp)?.copy(smsId = sms.id)
         }
 
         // Fallback: try generic parser if message contains transaction keywords
         if (BankSmsParserFactory.canGenericParse(sms.body)) {
             return BankSmsParserFactory.getGenericParser().parse(sms.body, sms.timestamp)
+                ?.copy(smsId = sms.id)
         }
 
         return null

@@ -5,6 +5,7 @@ import kotlinx.datetime.Instant
 /**
  * Domain model representing a parsed financial transaction from an SMS message.
  *
+ * @property smsId The unique ID of the source SMS message from the system inbox
  * @property type The category of transaction (debit, credit, transfer, withdrawal)
  * @property amount The transaction amount as a positive value
  * @property currency The currency code (defaults to COP for Colombian Peso)
@@ -18,6 +19,7 @@ import kotlinx.datetime.Instant
  * @property rawMessage The original SMS body for reference
  */
 data class TransactionInfo(
+    val smsId: Long = 0,
     val type: TransactionType,
     val amount: Double,
     val currency: String = "COP",
