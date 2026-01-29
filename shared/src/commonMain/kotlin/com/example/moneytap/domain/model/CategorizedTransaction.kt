@@ -28,6 +28,12 @@ enum class MatchType {
     /** Matched via category keywords in description */
     KEYWORD,
 
+    /** Matched via user-defined SMS parsing pattern */
+    USER_PATTERN,
+
+    /** Matched via user-defined categorization rule */
+    USER_RULE,
+
     /** No match found, assigned default category */
     DEFAULT,
 }
