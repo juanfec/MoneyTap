@@ -41,9 +41,14 @@ cmd.exe /c "cd /d <PROJECT_PATH> && .\gradlew.bat <command>"
 
 ## Testing
 
+**125+ tests** across the shared module covering parsers, categorization, repository, and use cases.
+
 ```bash
 # Run all tests
 :test
+
+# Run shared module tests (recommended for business logic)
+:shared:jvmTest
 
 # Run specific module tests
 :composeApp:test
@@ -53,41 +58,110 @@ cmd.exe /c "cd /d <PROJECT_PATH> && .\gradlew.bat <command>"
 
 Use the appropriate Gradle wrapper command from the Build Commands section above.
 
+### Test Structure
+
+| Directory | Description |
+|-----------|-------------|
+| `shared/src/commonTest/` | Cross-platform tests (parsers, categorization, use cases) |
+| `shared/src/jvmTest/` | JVM-specific tests (SQLite repository with in-memory driver) |
+
+### Test Utilities (`shared/src/commonTest/.../testutil/`)
+
+- `FakeSmsRepository` - In-memory SMS data source
+- `FakeTransactionRepository` - In-memory transaction storage
+
 Server tests use Ktor test client (`testApplication`).
 
 ## Architecture
 
 ```
 MoneyTap/
-├── composeApp/          # Compose Multiplatform UI application
+├── composeApp/                      # Compose Multiplatform UI application
 │   └── src/
-│       ├── commonMain/  # Shared Compose UI (App.kt)
-│       ├── androidMain/ # Android entry (MainActivity)
-│       ├── iosMain/     # iOS Compose controller
-│       └── jvmMain/     # Desktop entry
-├── shared/              # Common business logic library
+│       ├── commonMain/              # Shared Compose UI (App.kt)
+│       ├── androidMain/             # Android entry (MainActivity)
+│       ├── iosMain/                 # iOS Compose controller
+│       └── jvmMain/                 # Desktop entry
+├── shared/                          # Common business logic library
 │   └── src/
-│       ├── commonMain/  # Platform interface, Constants, Greeting
-│       └── <target>Main/# Platform-specific implementations
-├── server/              # Ktor HTTP server (port 8080)
-└── iosApp/              # Native SwiftUI wrapper for iOS
+│       ├── commonMain/
+│       │   ├── kotlin/.../
+│       │   │   ├── domain/
+│       │   │   │   ├── model/       # SmsMessage, TransactionInfo, Category, CategorizedTransaction
+│       │   │   │   ├── repository/  # SmsRepository, TransactionRepository
+│       │   │   │   ├── service/     # CategorizationEngine
+│       │   │   │   └── usecase/     # ParseSms, Categorize, GetSpendingByCategory
+│       │   │   ├── data/
+│       │   │   │   ├── parser/      # BankSmsParserFactory, bank-specific parsers
+│       │   │   │   ├── categorization/  # MerchantDictionary
+│       │   │   │   ├── repository/  # SmsRepositoryImpl, TransactionRepositoryImpl
+│       │   │   │   └── database/    # DatabaseDriverFactory (expect/actual)
+│       │   │   └── util/            # StringSimilarity (Levenshtein distance)
+│       │   └── sqldelight/          # Transaction.sq schema
+│       ├── commonTest/              # Cross-platform unit tests
+│       ├── jvmTest/                 # JVM-specific tests (SQLite in-memory)
+│       └── <target>Main/            # Platform-specific implementations
+├── server/                          # Ktor HTTP server (port 8080)
+└── iosApp/                          # Native SwiftUI wrapper for iOS
 ```
 
-**Platform abstraction pattern**: `Platform` interface defined in `shared/commonMain` with `expect` function, implemented via `actual` declarations per target.
+**Platform abstraction pattern**: `expect`/`actual` declarations for:
+- `Platform` interface (device info)
+- `DatabaseDriverFactory` (SQLDelight drivers: Android, JVM/SQLite, iOS/Native)
+- `SmsDataSource` (Android ContentResolver, stub for other platforms)
 
 ## Key Technologies
 
 - **Kotlin** 2.3.0
 - **Compose Multiplatform** 1.10.0
+- **SQLDelight** 2.0.2 (cross-platform database)
+- **Koin** 4.0.0 (dependency injection)
+- **Kotlinx Datetime** 0.6.1
+- **Kotlinx Coroutines** 1.10.2
 - **Ktor** 3.3.3 (server)
 - **AGP** 8.11.2
 - Android: minSdk 24, targetSdk 36
+
+## Core Business Logic
+
+### Transaction Processing Pipeline
+
+```
+SMS Inbox → BankSmsParserFactory → TransactionInfo → CategorizationEngine → CategorizedTransaction → SQLDelight DB
+```
+
+### Bank SMS Parsers (`shared/.../data/parser/banks/`)
+
+| Parser | Sender Patterns | Transaction Types |
+|--------|-----------------|-------------------|
+| `BancolombiaParser` | Bancolombia | Debit, Credit, Withdrawal, Transfer |
+| `NequiParser` | Nequi | Debit, Credit, Transfer |
+| `DaviplataParser` | Daviplata | Debit, Credit, Withdrawal |
+| `BancoOccidenteParser` | BcoOccworker Occidental | Debit, Credit |
+| `GenericTransactionParser` | Fallback | Any detected transaction |
+
+### Categorization Engine (`shared/.../domain/service/CategorizationEngine.kt`)
+
+4-layer matching with decreasing confidence:
+1. **Exact match** (95%) - Direct merchant name lookup in `MerchantDictionary`
+2. **Fuzzy match** (similarity × 0.9) - Levenshtein distance > 85%
+3. **Keyword match** (70%) - Category keywords in merchant name
+4. **Default** (0%) - Falls back to `UNCATEGORIZED`
+
+### Categories (`shared/.../domain/model/Category.kt`)
+
+`GROCERIES`, `RESTAURANT`, `COFFEE`, `GAS`, `TAXI_RIDESHARE`, `TRANSMILENIO`, `RENT_UTILITIES`, `BANK_FEES`, `EPS_HEALTH`, `ENTERTAINMENT`, `SHOPPING`, `TRANSFER`, `UNCATEGORIZED`
+
+### Database Schema (`shared/.../sqldelight/.../Transaction.sq`)
+
+Key fields: `smsId` (PK), `amount`, `type`, `currency`, `merchant`, `category`, `confidence`, `matchType`, `timestamp`, `rawMessage`
 
 ## Configuration Files
 
 - `/gradle/libs.versions.toml` - Centralized version catalog
 - `/composeApp/src/androidMain/AndroidManifest.xml` - Android app config
 - `/server/src/main/kotlin/Application.kt` - Server routes
+- `/shared/src/commonMain/sqldelight/.../Transaction.sq` - Database schema
 
 ## Code Style
 
