@@ -1,0 +1,26 @@
+CREATE TABLE UserCategorizationRuleEntity (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    conditions TEXT NOT NULL,
+    category TEXT NOT NULL,
+    priority INTEGER NOT NULL DEFAULT 100,
+    learnedFromExamples TEXT,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    createdAt INTEGER NOT NULL
+);
+
+insertRule:
+INSERT OR REPLACE INTO UserCategorizationRuleEntity(id, name, conditions, category, priority, learnedFromExamples, enabled, createdAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+getAllEnabled:
+SELECT * FROM UserCategorizationRuleEntity WHERE enabled = 1 ORDER BY priority DESC;
+
+getById:
+SELECT * FROM UserCategorizationRuleEntity WHERE id = ?;
+
+deleteRule:
+DELETE FROM UserCategorizationRuleEntity WHERE id = ?;
+
+updatePriority:
+UPDATE UserCategorizationRuleEntity SET priority = ? WHERE id = ?;

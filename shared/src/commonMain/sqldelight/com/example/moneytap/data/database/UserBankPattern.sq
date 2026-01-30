@@ -1,0 +1,31 @@
+CREATE TABLE UserBankPatternEntity (
+    id TEXT PRIMARY KEY,
+    bankName TEXT NOT NULL,
+    senderIds TEXT NOT NULL,
+    inferredPattern TEXT NOT NULL,
+    defaultCategory TEXT,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    successCount INTEGER NOT NULL DEFAULT 0,
+    failCount INTEGER NOT NULL DEFAULT 0,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+);
+
+insertPattern:
+INSERT OR REPLACE INTO UserBankPatternEntity(id, bankName, senderIds, inferredPattern, defaultCategory, enabled, successCount, failCount, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getAll:
+SELECT * FROM UserBankPatternEntity WHERE enabled = 1;
+
+getById:
+SELECT * FROM UserBankPatternEntity WHERE id = ?;
+
+getBySenderId:
+SELECT * FROM UserBankPatternEntity WHERE enabled = 1 AND senderIds LIKE '%' || ? || '%';
+
+updateStats:
+UPDATE UserBankPatternEntity SET successCount = ?, failCount = ?, updatedAt = ? WHERE id = ?;
+
+deletePattern:
+DELETE FROM UserBankPatternEntity WHERE id = ?;

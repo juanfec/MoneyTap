@@ -1,0 +1,20 @@
+CREATE TABLE TeachingExampleEntity (
+    id TEXT PRIMARY KEY,
+    bankPatternId TEXT NOT NULL,
+    smsBody TEXT NOT NULL,
+    senderId TEXT NOT NULL,
+    selections TEXT NOT NULL,
+    category TEXT,
+    createdAt INTEGER NOT NULL,
+    FOREIGN KEY (bankPatternId) REFERENCES UserBankPatternEntity(id) ON DELETE CASCADE
+);
+
+insertExample:
+INSERT INTO TeachingExampleEntity(id, bankPatternId, smsBody, senderId, selections, category, createdAt)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+getByPatternId:
+SELECT * FROM TeachingExampleEntity WHERE bankPatternId = ?;
+
+deleteExample:
+DELETE FROM TeachingExampleEntity WHERE id = ?;

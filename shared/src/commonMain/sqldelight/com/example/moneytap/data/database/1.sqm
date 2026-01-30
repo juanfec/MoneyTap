@@ -1,0 +1,36 @@
+-- Migration from v1 to v2: Add user-defined parser and categorization tables
+
+CREATE TABLE UserBankPatternEntity (
+    id TEXT PRIMARY KEY,
+    bankName TEXT NOT NULL,
+    senderIds TEXT NOT NULL,
+    inferredPattern TEXT NOT NULL,
+    defaultCategory TEXT,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    successCount INTEGER NOT NULL DEFAULT 0,
+    failCount INTEGER NOT NULL DEFAULT 0,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+);
+
+CREATE TABLE TeachingExampleEntity (
+    id TEXT PRIMARY KEY,
+    bankPatternId TEXT NOT NULL,
+    smsBody TEXT NOT NULL,
+    senderId TEXT NOT NULL,
+    selections TEXT NOT NULL,
+    category TEXT,
+    createdAt INTEGER NOT NULL,
+    FOREIGN KEY (bankPatternId) REFERENCES UserBankPatternEntity(id) ON DELETE CASCADE
+);
+
+CREATE TABLE UserCategorizationRuleEntity (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    conditions TEXT NOT NULL,
+    category TEXT NOT NULL,
+    priority INTEGER NOT NULL DEFAULT 100,
+    learnedFromExamples TEXT,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    createdAt INTEGER NOT NULL
+);

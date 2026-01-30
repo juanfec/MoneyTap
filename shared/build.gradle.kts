@@ -65,6 +65,7 @@ sqldelight {
     databases {
         create("MoneyTapDatabase") {
             packageName.set("com.example.moneytap.data.database")
+            version = 2
         }
     }
 }

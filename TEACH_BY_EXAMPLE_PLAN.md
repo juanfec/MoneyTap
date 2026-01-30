@@ -199,7 +199,7 @@ enum class MatchType { EXACT, FUZZY, KEYWORD, USER_PATTERN, USER_RULE, DEFAULT }
 
 ---
 
-## PHASE 2: Database Schema (SQLDelight)
+## PHASE 2: Database Schema (SQLDelight) ✅ COMPLETED
 
 ### Location: `shared/src/commonMain/sqldelight/com/example/moneytap/data/database/`
 
@@ -309,7 +309,7 @@ UPDATE UserCategorizationRuleEntity SET priority = ? WHERE id = ?;
 
 ---
 
-## PHASE 3: Repository Layer
+## PHASE 3: Repository Layer ✅ COMPLETED
 
 ### Interfaces: `shared/src/commonMain/kotlin/com/example/moneytap/domain/repository/`
 ### Implementations: `shared/src/commonMain/kotlin/com/example/moneytap/data/repository/`
@@ -723,8 +723,8 @@ Same in-memory SQLite pattern.
 ## Implementation Order
 
 1. ~~**Phase 1** — Data Models (foundation)~~ ✅ DONE
-2. **Phase 2** — Database Schema + migration
-3. **Phase 3** — Repository Layer (requires `kotlinx-serialization-json` dependency)
+2. ~~**Phase 2** — Database Schema + migration~~ ✅ DONE
+3. ~~**Phase 3** — Repository Layer (requires `kotlinx-serialization-json` dependency)~~ ✅ DONE
 4. **Phase 4** — Pattern Inference Engine + extend `StringSimilarity`
 5. **Phase 5** — Fuzzy Pattern Matcher + extend `AmountParser`
 6. **Phase 6** — Category Teaching Engine
