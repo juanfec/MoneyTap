@@ -5,17 +5,25 @@ import com.example.moneytap.domain.model.CategorizedTransaction
 import com.example.moneytap.domain.model.Category
 import com.example.moneytap.domain.model.MatchType
 import com.example.moneytap.domain.model.TransactionInfo
+import com.example.moneytap.domain.model.UserCategorizationRule
 import com.example.moneytap.util.StringSimilarity
 
 /**
- * Engine for categorizing transactions using a 5-layer matching approach:
+ * Engine for categorizing transactions using a 6-layer matching approach:
+ * 0. User rules - Custom rules defined by the user (highest priority)
  * 1. Exact match - Direct lookup in merchant dictionary
- * 2. Substring match - Known merchant contained in extracted name (e.g., "MAS POR MENOS" in "SUPERM MAS POR MENOS C")
+ * 2. Substring match - Known merchant contained in extracted name
  * 3. Fuzzy match - Levenshtein similarity > 85%
  * 4. Keyword match - Search for category keywords in merchant/description
  * 5. Default - Assign UNCATEGORIZED when no match found
+ *
+ * @property userRules Optional list of user-defined categorization rules
+ * @property categoryTeachingEngine Optional engine for matching user rules
  */
-class CategorizationEngine {
+class CategorizationEngine(
+    private val userRules: List<UserCategorizationRule> = emptyList(),
+    private val categoryTeachingEngine: CategoryTeachingEngine? = null,
+) {
 
     companion object {
         private const val EXACT_MATCH_CONFIDENCE = 0.95
@@ -26,7 +34,7 @@ class CategorizationEngine {
     }
 
     /**
-     * Categorizes a single transaction using the 4-layer matching engine.
+     * Categorizes a single transaction using the 6-layer matching engine.
      *
      * @param transaction The transaction to categorize
      * @return A [CategorizedTransaction] with the assigned category and confidence
@@ -36,6 +44,11 @@ class CategorizationEngine {
             StringSimilarity.normalizeMerchantName(it)
         } ?: ""
         val description = transaction.description?.uppercase() ?: ""
+
+        // Layer 0: User rules (highest priority)
+        if (userRules.isNotEmpty() && categoryTeachingEngine != null) {
+            matchUserRule(transaction)?.let { return it }
+        }
 
         // Layer 1: Exact match
         exactMatch(merchantName)?.let { category ->
@@ -160,7 +173,7 @@ class CategorizationEngine {
     }
 
     /**
-     * Layer 3: Keyword match - search for category keywords in text.
+     * Layer 4: Keyword match - search for category keywords in text.
      */
     private fun keywordMatch(merchantName: String, description: String): Category? {
         val combinedText = "$merchantName $description"
@@ -168,6 +181,35 @@ class CategorizationEngine {
         for ((keyword, category) in MerchantDictionary.keywordToCategory) {
             if (StringSimilarity.containsIgnoreCase(combinedText, keyword)) {
                 return category
+            }
+        }
+
+        return null
+    }
+
+    /**
+     * Layer 0: Check if transaction matches any user-defined rule.
+     * Rules are checked in priority order (highest first).
+     */
+    private fun matchUserRule(transaction: TransactionInfo): CategorizedTransaction? {
+        val teachingEngine = categoryTeachingEngine ?: return null
+
+        // Rules are already sorted by priority in the repository
+        for (rule in userRules) {
+            val categorizedTx = CategorizedTransaction(
+                transaction = transaction,
+                category = Category.UNCATEGORIZED,
+                confidence = 0.0,
+                matchType = MatchType.DEFAULT,
+            )
+
+            if (teachingEngine.matchesRule(categorizedTx, rule)) {
+                return CategorizedTransaction(
+                    transaction = transaction,
+                    category = rule.category,
+                    confidence = 1.0, // User rules have highest confidence
+                    matchType = MatchType.USER_RULE,
+                )
             }
         }
 

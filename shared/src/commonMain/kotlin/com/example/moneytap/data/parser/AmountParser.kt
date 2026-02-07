@@ -1,5 +1,8 @@
 package com.example.moneytap.data.parser
 
+import com.example.moneytap.domain.model.AmountFormat
+import com.example.moneytap.domain.model.CurrencyPosition
+
 /**
  * Utility object for parsing monetary amounts from Colombian bank SMS messages.
  *
@@ -81,5 +84,111 @@ object AmountParser {
         val amountPattern = Regex("""\$?\s*[\d.,]+""")
         val match = amountPattern.find(text) ?: return null
         return parseColombianAmount(match.value)
+    }
+
+    /**
+     * Detects the amount format from a list of amount strings.
+     * Analyzes separators and currency symbols to determine formatting.
+     *
+     * @param amountStrings List of amount strings to analyze
+     * @return Detected AmountFormat
+     */
+    fun detectFormat(amountStrings: List<String>): AmountFormat {
+        if (amountStrings.isEmpty()) {
+            // Default Colombian format
+            return AmountFormat(
+                thousandsSeparator = '.',
+                decimalSeparator = ',',
+                currencySymbol = "$",
+                currencyPosition = CurrencyPosition.BEFORE,
+            )
+        }
+
+        val firstAmount = amountStrings.first()
+
+        // Detect separators
+        val hasComma = firstAmount.contains(',')
+        val hasDot = firstAmount.contains('.')
+
+        val (thousandsSep, decimalSep) = when {
+            hasComma && hasDot -> {
+                val lastCommaPos = firstAmount.lastIndexOf(',')
+                val lastDotPos = firstAmount.lastIndexOf('.')
+                if (lastCommaPos > lastDotPos) {
+                    '.' to ','  // 1.234,56 (Colombian)
+                } else {
+                    ',' to '.'  // 1,234.56 (US)
+                }
+            }
+            hasComma -> '.' to ','  // Only comma - assume European/Colombian format
+            hasDot -> ',' to '.'    // Only dot - assume US format
+            else -> '.' to ','      // No separators - default to Colombian
+        }
+
+        // Detect currency symbol and position
+        val currencySymbols = listOf("$", "USD", "COP", "€", "£", "R$")
+        var currencySymbol: String? = null
+        var currencyPosition = CurrencyPosition.NONE
+
+        for (symbol in currencySymbols) {
+            if (firstAmount.startsWith(symbol)) {
+                currencySymbol = symbol
+                currencyPosition = CurrencyPosition.BEFORE
+                break
+            } else if (firstAmount.endsWith(symbol)) {
+                currencySymbol = symbol
+                currencyPosition = CurrencyPosition.AFTER
+                break
+            } else if (firstAmount.contains(symbol)) {
+                currencySymbol = symbol
+                currencyPosition = CurrencyPosition.BEFORE
+                break
+            }
+        }
+
+        return AmountFormat(
+            thousandsSeparator = thousandsSep,
+            decimalSeparator = decimalSep,
+            currencySymbol = currencySymbol,
+            currencyPosition = currencyPosition,
+        )
+    }
+
+    /**
+     * Formats a Double amount for display according to the specified format.
+     *
+     * @param amount The amount to format
+     * @param format The AmountFormat specifying how to format
+     * @return Formatted amount string
+     */
+    fun formatForDisplay(amount: Double, format: AmountFormat): String {
+        // Split into integer and decimal parts
+        val integerPart = amount.toLong()
+        val decimalPart = ((amount - integerPart) * 100).toInt()
+
+        // Format integer part with thousands separators
+        val integerStr = integerPart.toString()
+        val formattedInteger = buildString {
+            val reversedDigits = integerStr.reversed()
+            reversedDigits.forEachIndexed { index, digit ->
+                if (index > 0 && index % 3 == 0) {
+                    append(format.thousandsSeparator)
+                }
+                append(digit)
+            }
+        }.reversed()
+
+        // Build final string
+        val amountStr = if (decimalPart > 0) {
+            "$formattedInteger${format.decimalSeparator}${decimalPart.toString().padStart(2, '0')}"
+        } else {
+            formattedInteger
+        }
+
+        return when (format.currencyPosition) {
+            CurrencyPosition.BEFORE -> "${format.currencySymbol ?: ""}$amountStr"
+            CurrencyPosition.AFTER -> "$amountStr${format.currencySymbol ?: ""}"
+            CurrencyPosition.NONE -> amountStr
+        }
     }
 }

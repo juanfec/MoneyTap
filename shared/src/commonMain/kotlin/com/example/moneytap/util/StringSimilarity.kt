@@ -92,4 +92,45 @@ object StringSimilarity {
             .replace(Regex("""\s+"""), " ")
             .trim()
     }
+
+    /**
+     * Finds the longest common substring between two strings.
+     * Used for pattern inference to identify fixed text anchors in SMS messages.
+     *
+     * @param s1 First string
+     * @param s2 Second string
+     * @return The longest substring that appears in both strings (case-insensitive)
+     */
+    fun longestCommonSubstring(s1: String, s2: String): String {
+        if (s1.isEmpty() || s2.isEmpty()) return ""
+
+        val str1 = s1.lowercase()
+        val str2 = s2.lowercase()
+
+        val len1 = str1.length
+        val len2 = str2.length
+
+        var maxLen = 0
+        var endIndex = 0
+
+        val dp = Array(len1 + 1) { IntArray(len2 + 1) }
+
+        for (i in 1..len1) {
+            for (j in 1..len2) {
+                if (str1[i - 1] == str2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1
+                    if (dp[i][j] > maxLen) {
+                        maxLen = dp[i][j]
+                        endIndex = i
+                    }
+                }
+            }
+        }
+
+        return if (maxLen > 0) {
+            s1.substring(endIndex - maxLen, endIndex)
+        } else {
+            ""
+        }
+    }
 }

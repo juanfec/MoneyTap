@@ -376,7 +376,7 @@ Add `kotlin("plugin.serialization")` to shared module plugins.
 
 ---
 
-## PHASE 4: Pattern Inference Engine
+## PHASE 4: Pattern Inference Engine ✅ COMPLETED
 
 ### Location: `shared/src/commonMain/kotlin/com/example/moneytap/domain/service/`
 
@@ -417,7 +417,7 @@ File: `domain/service/PatternInferenceEngine.kt`
 
 ---
 
-## PHASE 5: Fuzzy Pattern Matcher
+## PHASE 5: Fuzzy Pattern Matcher ✅ COMPLETED
 
 ### Location: `shared/src/commonMain/kotlin/com/example/moneytap/domain/service/`
 
@@ -461,7 +461,7 @@ File: `domain/service/FuzzyPatternMatcher.kt`
 
 ---
 
-## PHASE 6: Category Teaching Engine
+## PHASE 6: Category Teaching Engine ✅ COMPLETED
 
 ### Location: `shared/src/commonMain/kotlin/com/example/moneytap/domain/service/`
 
@@ -485,7 +485,7 @@ File: `domain/service/CategoryTeachingEngine.kt`
 
 ---
 
-## PHASE 7: Integration with Existing Code
+## PHASE 7: Integration with Existing Code ✅ COMPLETED
 
 ### Task 7.1: Modify ParseSmsTransactionsUseCase
 
@@ -542,6 +542,29 @@ class CategorizationEngine(
     }
 }
 ```
+
+### Integration Tests for Phase 7 ✅ COMPLETED
+
+Created integration tests to verify Phase 7 modifications:
+
+**File: `shared/src/commonTest/kotlin/com/example/moneytap/domain/usecase/ParseSmsTransactionsWithUserPatternsTest.kt`**
+- 7 test cases covering user pattern integration
+- Tests verify user patterns are tried before built-in parsers
+- Tests verify fallback to built-in parsers when no pattern matches
+- Tests verify success/failure statistics are updated correctly
+- Tests verify backward compatibility (works without user pattern repository)
+
+**File: `shared/src/commonTest/kotlin/com/example/moneytap/domain/service/CategorizationEngineWithUserRulesTest.kt`**
+- 8 test cases covering user rule integration
+- Tests verify user rules take highest priority (Layer 0)
+- Tests verify fallback to built-in layers works correctly
+- Tests verify backward compatibility (no-arg constructor)
+- Tests verify rule priority ordering, condition types, and disabled rules
+
+**File: `shared/src/commonTest/kotlin/com/example/moneytap/testutil/FakeUserPatternRepository.kt`**
+- In-memory fake repository for testing user patterns
+
+All 166 tests passing ✅
 
 ### Task 7.3: Update DI Modules
 
@@ -677,46 +700,64 @@ File: `App.kt` — add composable destinations for new routes.
 ### Location: `shared/src/commonTest/kotlin/com/example/moneytap/`
 ### JVM-only: `shared/src/jvmTest/kotlin/com/example/moneytap/`
 
-### Task 9.1: PatternInferenceEngineTest (`commonTest/.../domain/service/`)
+### Task 9.1: PatternInferenceEngineTest (`commonTest/.../domain/service/`) ✅ ALREADY CREATED
 
-Test cases:
-- Two simple examples with amount and merchant
-- Examples with different merchant lengths
-- Examples with balance field
-- Colombian amount format detection
-- Edge case: only one example (should fail)
-- Edge case: examples with different fields selected (should fail)
+Test cases implemented:
+- Two simple examples with amount and merchant ✅
+- Examples with different merchant lengths ✅
+- Examples with balance field ✅
+- Colombian amount format detection ✅
+- Edge case: only one example (should fail) ✅
+- Edge case: examples with different fields selected (should fail) ✅
+- Confidence increases with more examples ✅
 
-### Task 9.2: FuzzyPatternMatcherTest (`commonTest/.../domain/service/`)
+### Task 9.2: FuzzyPatternMatcherTest (`commonTest/.../domain/service/`) ✅ ALREADY CREATED
 
-Test cases:
-- Exact match returns high confidence
-- Minor typo still matches (fuzzy)
-- Completely different SMS returns null
-- Amount extraction with Colombian format
-- Merchant extraction with various end markers
-- Confidence threshold enforcement
+Test cases implemented:
+- Exact match returns high confidence ✅
+- Minor typo still matches (fuzzy) ✅
+- Completely different SMS returns null ✅
+- Amount extraction with Colombian format ✅
+- Merchant extraction with various end markers ✅
+- Confidence threshold enforcement ✅
+- Handles pattern with no fixed text ✅
+- Handles multiple variable fields in sequence ✅
+- Fuzzy matching disabled requires exact match ✅
+- Extracts card last 4 digits ✅
 
-### Task 9.3: CategoryTeachingEngineTest (`commonTest/.../domain/service/`)
+### Task 9.3: CategoryTeachingEngineTest (`commonTest/.../domain/service/`) ✅ ALREADY CREATED
 
-Test cases:
-- Two transactions same merchant → MerchantEquals rule
-- Two transactions different merchants, common keyword → AnyKeyword rule
-- Filters generic words correctly
-- Handles empty merchant names
+Test cases implemented:
+- Two transactions same merchant → MerchantEquals rule ✅
+- Two transactions different merchants, common keyword → AnyKeyword rule ✅
+- Filters generic words correctly ✅
+- Handles empty merchant names ✅
+- Returns null for single transaction ✅
+- Adds sender condition when all from same sender ✅
+- matchesRule returns true when all conditions match ✅
+- matchesRule returns false when merchant does not match ✅
+- matchesRule returns false when rule is disabled ✅
+- matchesRule with AnyKeyword condition ✅
+- Generates descriptive rule name ✅
 
-### Task 9.4: UserPatternRepositoryImplTest (`jvmTest/.../data/repository/`)
+### Task 9.4: UserPatternRepositoryImplTest (`jvmTest/.../data/repository/`) — TODO
 
 Uses in-memory `JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)` — same pattern as `TransactionRepositoryImplTest`.
 
-### Task 9.5: UserRuleRepositoryImplTest (`jvmTest/.../data/repository/`)
+**Note:** This test should be created after Phase 7 (Integration) is complete.
+
+### Task 9.5: UserRuleRepositoryImplTest (`jvmTest/.../data/repository/`) — TODO
 
 Same in-memory SQLite pattern.
 
-### Task 9.6: Fake implementations (`commonTest/.../testutil/`)
+**Note:** This test should be created after Phase 7 (Integration) is complete.
+
+### Task 9.6: Fake implementations (`commonTest/.../testutil/`) — TODO
 
 - `FakeUserPatternRepository` — in-memory, follows `FakeTransactionRepository` pattern
 - `FakeUserRuleRepository` — in-memory
+
+**Note:** These fakes should be created when needed for integration tests or use case tests in Phase 7.
 
 ---
 
@@ -725,10 +766,10 @@ Same in-memory SQLite pattern.
 1. ~~**Phase 1** — Data Models (foundation)~~ ✅ DONE
 2. ~~**Phase 2** — Database Schema + migration~~ ✅ DONE
 3. ~~**Phase 3** — Repository Layer (requires `kotlinx-serialization-json` dependency)~~ ✅ DONE
-4. **Phase 4** — Pattern Inference Engine + extend `StringSimilarity`
-5. **Phase 5** — Fuzzy Pattern Matcher + extend `AmountParser`
-6. **Phase 6** — Category Teaching Engine
-7. **Phase 7** — Integration (modify existing use case + engine + DI)
+4. ~~**Phase 4** — Pattern Inference Engine + extend `StringSimilarity`~~ ✅ DONE
+5. ~~**Phase 5** — Fuzzy Pattern Matcher + extend `AmountParser`~~ ✅ DONE
+6. ~~**Phase 6** — Category Teaching Engine~~ ✅ DONE
+7. ~~**Phase 7** — Integration (modify existing use case + engine + DI)~~ ✅ DONE
 8. **Phase 9** — Tests (before UI, to validate business logic)
 9. **Phase 8** — UI Components + Navigation
 
