@@ -21,7 +21,7 @@ val categorizationModule = module {
 
     // New bindings for user-defined patterns (Phase 4-6)
     singleOf(::PatternInferenceEngine)
-    singleOf(::FuzzyPatternMatcher)
+    single { FuzzyPatternMatcher() } // Use default parameters
     singleOf(::CategoryTeachingEngine)
 
     // ViewModel for teaching flow (Phase 8)
