@@ -725,7 +725,7 @@ File: `App.kt` — add composable destinations for new routes.
 
 ---
 
-## PHASE 9: Testing
+## PHASE 9: Testing ✅ COMPLETED
 
 ### Location: `shared/src/commonTest/kotlin/com/example/moneytap/`
 ### JVM-only: `shared/src/jvmTest/kotlin/com/example/moneytap/`
@@ -770,24 +770,49 @@ Test cases implemented:
 - matchesRule with AnyKeyword condition ✅
 - Generates descriptive rule name ✅
 
-### Task 9.4: UserPatternRepositoryImplTest (`jvmTest/.../data/repository/`) — TODO
+### Task 9.4: UserPatternRepositoryImplTest (`jvmTest/.../data/repository/`) ✅ COMPLETED
 
-Uses in-memory `JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)` — same pattern as `TransactionRepositoryImplTest`.
+Uses in-memory `JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)` with `PRAGMA foreign_keys = ON` enabled.
 
-**Note:** This test should be created after Phase 7 (Integration) is complete.
+Test cases:
+- savePattern stores and retrieves a pattern ✅
+- savePattern replaces existing pattern with same id ✅
+- getAllPatterns returns only enabled patterns ✅
+- getPatternBySenderId finds pattern by sender id ✅
+- getPatternBySenderId is case insensitive ✅
+- updatePatternStats updates success and fail counts ✅
+- deletePattern removes pattern and associated examples (CASCADE DELETE) ✅
+- saveTeachingExample stores example for pattern ✅
+- getExamplesForPattern returns empty list for non-existent pattern ✅
+- pattern preserves inferred pattern structure ✅
+- pattern with null default category is handled correctly ✅
+- multiple patterns can be stored and retrieved ✅
 
-### Task 9.5: UserRuleRepositoryImplTest (`jvmTest/.../data/repository/`) — TODO
+### Task 9.5: UserRuleRepositoryImplTest (`jvmTest/.../data/repository/`) ✅ COMPLETED
 
 Same in-memory SQLite pattern.
 
-**Note:** This test should be created after Phase 7 (Integration) is complete.
+Test cases:
+- saveRule stores and retrieves a rule ✅
+- saveRule replaces existing rule with same id ✅
+- getEnabledRules returns only enabled rules ✅
+- getEnabledRules returns rules sorted by priority descending ✅
+- deleteRule removes rule from database ✅
+- updateRulePriority changes rule priority ✅
+- rule with MerchantEquals condition is preserved ✅
+- rule with MerchantContains condition is preserved ✅
+- rule with SenderContains condition is preserved ✅
+- rule with AmountRange condition is preserved ✅
+- rule with AnyKeyword condition is preserved ✅
+- rule with multiple conditions is preserved ✅
+- rule with learnedFromExamples is preserved ✅
+- rule with null learnedFromExamples is preserved ✅
+- multiple rules can be stored and retrieved ✅
 
-### Task 9.6: Fake implementations (`commonTest/.../testutil/`) — TODO
+### Task 9.6: Fake implementations (`commonTest/.../testutil/`) ✅ COMPLETED
 
-- `FakeUserPatternRepository` — in-memory, follows `FakeTransactionRepository` pattern
-- `FakeUserRuleRepository` — in-memory
-
-**Note:** These fakes should be created when needed for integration tests or use case tests in Phase 7.
+- `FakeUserPatternRepository` — ✅ Created during Phase 7 integration tests
+- `FakeUserRuleRepository` — ✅ Created with in-memory storage, sorted by priority
 
 ---
 
