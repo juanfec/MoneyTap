@@ -10,9 +10,12 @@ import com.example.moneytap.navigation.Route
 import com.example.moneytap.permission.rememberSmsPermissionState
 import com.example.moneytap.presentation.viewmodel.SmsViewModel
 import com.example.moneytap.presentation.viewmodel.SpendingViewModel
+import com.example.moneytap.presentation.viewmodel.TeachingViewModel
+import com.example.moneytap.ui.screen.CategoryTeachingScreen
 import com.example.moneytap.ui.screen.CategoryTransactionsScreen
 import com.example.moneytap.ui.screen.SmsInboxScreen
 import com.example.moneytap.ui.screen.SpendingSummaryScreen
+import com.example.moneytap.ui.screen.TeachingScreen
 import com.example.moneytap.ui.screen.TransactionDetailScreen
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -81,11 +84,39 @@ fun App() {
             composable<Route.TransactionDetail> {
                 val route = it.toRoute<Route.TransactionDetail>()
                 val viewModel: SpendingViewModel = koinViewModel()
-                
+
                 TransactionDetailScreen(
                     categoryName = route.categoryName,
                     transactionIndex = route.transactionIndex,
                     viewModel = viewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                )
+            }
+
+            composable<Route.Teaching> {
+                val viewModel: TeachingViewModel = koinViewModel()
+
+                TeachingScreen(
+                    viewModel = viewModel,
+                    initialSms = null, // TODO: Pass initial SMS when navigating from SMS list
+                    onNavigateBack = { navController.popBackStack() },
+                )
+            }
+
+            composable<Route.CategoryTeaching> {
+                val spendingViewModel: SpendingViewModel = koinViewModel()
+
+                // Get all transactions from spending summary
+                val transactions = spendingViewModel.uiState.value.summary?.byCategory
+                    ?.values
+                    ?.flatMap { it.transactions }
+                    ?: emptyList()
+
+                CategoryTeachingScreen(
+                    transactions = transactions,
+                    onSaveRule = { selectedTransactions, category ->
+                        // TODO: Implement rule saving logic with CategoryTeachingEngine
+                    },
                     onNavigateBack = { navController.popBackStack() },
                 )
             }

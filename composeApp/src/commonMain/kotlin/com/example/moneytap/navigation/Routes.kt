@@ -22,4 +22,10 @@ sealed interface Route {
         val categoryName: String,
         val transactionIndex: Int,
     ) : Route
+
+    @Serializable
+    data object Teaching : Route
+
+    @Serializable
+    data object CategoryTeaching : Route
 }

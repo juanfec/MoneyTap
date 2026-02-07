@@ -602,7 +602,7 @@ val databaseModule = module {
 
 ---
 
-## PHASE 8: UI Components (Compose Multiplatform)
+## PHASE 8: UI Components (Compose Multiplatform) ✅ COMPLETED
 
 ### Location: `composeApp/src/commonMain/kotlin/com/example/moneytap/`
 
@@ -692,6 +692,36 @@ sealed interface Route {
 ```
 
 File: `App.kt` — add composable destinations for new routes.
+
+### Phase 8 Implementation Summary ✅
+
+**Task 8.1**: TeachingUiState created with TeachingStep enum
+- Location: `composeApp/src/commonMain/kotlin/com/example/moneytap/presentation/state/TeachingUiState.kt`
+
+**Task 8.2**: TeachingViewModel created with full wizard flow logic
+- Location: `composeApp/src/commonMain/kotlin/com/example/moneytap/presentation/viewmodel/TeachingViewModel.kt`
+- Actions: startTeaching, selectText, confirmExample, addExample, skipOptionalFields, setCategory, savePattern
+
+**Task 8.3**: SelectableText component created
+- Location: `composeApp/src/commonMain/kotlin/com/example/moneytap/ui/component/SelectableText.kt`
+- Features: Text selection with highlights, existing selections display, field type colors
+
+**Task 8.4**: TeachingScreen created
+- Location: `composeApp/src/commonMain/kotlin/com/example/moneytap/ui/screen/TeachingScreen.kt`
+- Multi-step wizard with progress indicator
+- Steps: SELECT_SMS → SELECT_AMOUNT → SELECT_MERCHANT → SELECT_OPTIONAL_FIELDS → ADD_MORE_EXAMPLES → REVIEW_PATTERN → SET_CATEGORY → DONE
+
+**Task 8.5**: CategoryTeachingScreen created
+- Location: `composeApp/src/commonMain/kotlin/com/example/moneytap/ui/screen/CategoryTeachingScreen.kt`
+- Simpler flow: Select transactions → Pick category → Review & save
+
+**Task 8.6**: Navigation updated
+- Routes.kt: Added Teaching and CategoryTeaching routes
+- App.kt: Added composable destinations for both screens
+
+**Task 7.3 (completed during Phase 8)**: DI Modules updated
+- CategorizationModule.kt: Added PatternInferenceEngine, FuzzyPatternMatcher, CategoryTeachingEngine, TeachingViewModel
+- DatabaseModule.kt: Added UserPatternRepository and UserRuleRepository bindings
 
 ---
 
