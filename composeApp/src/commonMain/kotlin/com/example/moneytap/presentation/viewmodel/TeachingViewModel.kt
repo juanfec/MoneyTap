@@ -131,7 +131,7 @@ class TeachingViewModel(
         }
 
         val example = TeachingExample(
-            id = "example_${System.currentTimeMillis()}",
+            id = "example_${Clock.System.now().toEpochMilliseconds()}",
             smsBody = currentSms.body,
             senderId = currentSms.sender,
             selections = selections,
