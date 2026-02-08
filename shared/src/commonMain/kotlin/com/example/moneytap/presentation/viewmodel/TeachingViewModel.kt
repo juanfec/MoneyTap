@@ -2,6 +2,7 @@ package com.example.moneytap.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.moneytap.domain.Constants
 import com.example.moneytap.domain.model.Category
 import com.example.moneytap.domain.model.FieldSelection
 import com.example.moneytap.domain.model.FieldType
@@ -66,7 +67,7 @@ class TeachingViewModel(
      * Load SMS messages from the same sender for adding more examples.
      */
     private suspend fun loadSmsFromSameSender(sender: String) {
-        smsRepository.getInboxMessages(limit = 100)
+        smsRepository.getInboxMessages(limit = Constants.DEFAULT_SMS_LIMIT)
             .onSuccess { allMessages ->
                 val fromSameSender = allMessages.filter { msg ->
                     msg.sender.equals(sender, ignoreCase = true) &&

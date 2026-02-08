@@ -1,27 +1,35 @@
 package com.example.moneytap.ui.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.example.moneytap.domain.model.FieldSelection
@@ -30,8 +38,8 @@ import com.example.moneytap.domain.model.FieldType
 /**
  * Text component that allows users to select portions of text for field definition.
  *
- * Shows existing selections with colored highlights and allows new selections
- * by long-pressing and dragging.
+ * Uses native Android text selection with familiar drag handles.
+ * User selects text, then taps "Next" to confirm the selection.
  *
  * @param text The text to display and make selectable
  * @param existingSelections Already selected fields with their ranges
@@ -47,65 +55,112 @@ fun SelectableText(
     onSelectionMade: (startIndex: Int, endIndex: Int, selectedText: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var selectionStart by remember { mutableStateOf<Int?>(null) }
-    var selectionEnd by remember { mutableStateOf<Int?>(null) }
-    var textPosition by remember { mutableStateOf(Offset.Zero) }
+    // Build annotated text with existing selections highlighted
+    val annotatedText = remember(text, existingSelections) {
+        buildAnnotatedText(text, existingSelections, currentFieldType)
+    }
 
-    val annotatedText = remember(text, existingSelections, selectionStart, selectionEnd) {
-        buildAnnotatedText(text, existingSelections, selectionStart, selectionEnd, currentFieldType)
+    // Track the current text field value with selection
+    var textFieldValue by remember(text) {
+        mutableStateOf(TextFieldValue(annotatedString = annotatedText, selection = TextRange.Zero))
+    }
+
+    // Extract current selection info
+    val hasSelection = textFieldValue.selection.start != textFieldValue.selection.end
+    val selectedText = if (hasSelection) {
+        // Handle both forward and backward selection
+        val start = minOf(textFieldValue.selection.start, textFieldValue.selection.end)
+        val end = maxOf(textFieldValue.selection.start, textFieldValue.selection.end)
+        text.substring(start, end)
+    } else {
+        ""
+    }
+
+    val instructionText = if (hasSelection) {
+        "Selection made. Tap Next to confirm."
+    } else {
+        "Select ${currentFieldType.name.lowercase().replace('_', ' ')} using the handles"
     }
 
     Column(modifier = modifier) {
+        Text(
+            text = instructionText,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+
+        // BasicTextField with readOnly=true for native selection
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(16.dp)
-                .onGloballyPositioned { coordinates ->
-                    textPosition = coordinates.positionInRoot()
-                }
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onLongPress = { offset ->
-                            // Calculate character index from tap position
-                            // This is a simplified approach - in production you'd use more precise text layout
-                            val charIndex = estimateCharIndexFromOffset(offset, text, size.width.toFloat())
-                            selectionStart = charIndex
-                            selectionEnd = charIndex
-                        },
-                        onPress = {
-                            val offset = it
-                            tryAwaitRelease()
-
-                            if (selectionStart != null && selectionEnd != null) {
-                                val start = minOf(selectionStart!!, selectionEnd!!)
-                                val end = maxOf(selectionStart!!, selectionEnd!!)
-
-                                if (end > start) {
-                                    val selectedText = text.substring(start, end)
-                                    onSelectionMade(start, end, selectedText)
-                                }
-
-                                selectionStart = null
-                                selectionEnd = null
-                            }
-                        },
-                    )
-                },
+                .padding(16.dp),
         ) {
-            Text(
-                text = annotatedText,
-                style = MaterialTheme.typography.bodyLarge,
+            BasicTextField(
+                value = textFieldValue,
+                onValueChange = { newValue ->
+                    // Update selection but keep the same text
+                    textFieldValue = newValue.copy(annotatedString = annotatedText)
+                },
+                readOnly = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 modifier = Modifier.fillMaxWidth(),
             )
         }
 
-        Text(
-            text = "Tap and drag to select ${currentFieldType.name.lowercase().replace('_', ' ')}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp),
-        )
+        // Show selected text preview
+        if (hasSelection) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Selected: \"$selectedText\"",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.secondary,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Action buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (hasSelection) {
+                TextButton(
+                    onClick = {
+                        // Clear selection
+                        textFieldValue = textFieldValue.copy(selection = TextRange.Zero)
+                    },
+                ) {
+                    Text("Cancel")
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Button(
+                    onClick = {
+                        // Handle both forward and backward selection
+                        val start = minOf(textFieldValue.selection.start, textFieldValue.selection.end)
+                        val end = maxOf(textFieldValue.selection.start, textFieldValue.selection.end)
+                        onSelectionMade(start, end, selectedText)
+
+                        // Clear selection for next field
+                        textFieldValue = textFieldValue.copy(selection = TextRange.Zero)
+                    },
+                ) {
+                    Text("Next")
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -115,8 +170,6 @@ fun SelectableText(
 private fun buildAnnotatedText(
     text: String,
     existingSelections: List<FieldSelection>,
-    selectionStart: Int?,
-    selectionEnd: Int?,
     currentFieldType: FieldType,
 ): AnnotatedString {
     return buildAnnotatedString {
@@ -148,19 +201,6 @@ private fun buildAnnotatedText(
         if (lastIndex < text.length) {
             append(text.substring(lastIndex))
         }
-
-        // Highlight current selection in progress
-        if (selectionStart != null && selectionEnd != null) {
-            val start = minOf(selectionStart, selectionEnd)
-            val end = maxOf(selectionStart, selectionEnd)
-            addStyle(
-                style = SpanStyle(
-                    background = getColorForFieldType(currentFieldType).copy(alpha = 0.5f),
-                ),
-                start = start,
-                end = minOf(end, text.length),
-            )
-        }
     }
 }
 
@@ -178,13 +218,3 @@ private fun getColorForFieldType(fieldType: FieldType): Color {
     }
 }
 
-/**
- * Estimate character index from tap offset.
- * This is a simplified approach - in production you'd use TextLayoutResult.
- */
-private fun estimateCharIndexFromOffset(offset: Offset, text: String, width: Float): Int {
-    // Simple estimation: assume monospace and calculate based on offset
-    val charWidth = width / text.length
-    val estimatedIndex = (offset.x / charWidth).toInt()
-    return estimatedIndex.coerceIn(0, text.length)
-}

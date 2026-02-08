@@ -2,6 +2,8 @@ package com.example.moneytap
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -42,11 +44,16 @@ fun App() {
                     viewModel = viewModel,
                     onRequestPermission = { permissionState.launchPermissionRequest() },
                     onOpenSettings = { permissionState.openSettings() },
+                    onTeachPattern = { sms ->
+                        navController.navigate(Route.Teaching(smsId = sms.id))
+                    },
                 )
             }
 
             composable<Route.SpendingSummary> {
-                val viewModel: SpendingViewModel = koinViewModel()
+                val viewModel: SpendingViewModel = koinViewModel(
+                    key = "spending_summary_vm"
+                )
                 val permissionState = rememberSmsPermissionState { granted, shouldShowRationale ->
                     viewModel.onPermissionResult(granted, shouldShowRationale)
                 }
@@ -64,7 +71,9 @@ fun App() {
 
             composable<Route.CategoryTransactions> {
                 val route = it.toRoute<Route.CategoryTransactions>()
-                val viewModel: SpendingViewModel = koinViewModel()
+                val viewModel: SpendingViewModel = koinViewModel(
+                    key = "spending_summary_vm"
+                )
                 
                 CategoryTransactionsScreen(
                     categoryName = route.categoryName,
@@ -83,28 +92,41 @@ fun App() {
 
             composable<Route.TransactionDetail> {
                 val route = it.toRoute<Route.TransactionDetail>()
-                val viewModel: SpendingViewModel = koinViewModel()
+                val viewModel: SpendingViewModel = koinViewModel(
+                    key = "spending_summary_vm"
+                )
 
                 TransactionDetailScreen(
                     categoryName = route.categoryName,
                     transactionIndex = route.transactionIndex,
                     viewModel = viewModel,
                     onNavigateBack = { navController.popBackStack() },
+                    onTeachPattern = { smsId ->
+                        navController.navigate(Route.Teaching(smsId = smsId))
+                    },
                 )
             }
 
             composable<Route.Teaching> {
+                val route = it.toRoute<Route.Teaching>()
                 val viewModel: TeachingViewModel = koinViewModel()
+                val smsViewModel: SmsViewModel = koinViewModel()
+
+                // Find the SMS from the list
+                val uiState by smsViewModel.uiState.collectAsStateWithLifecycle()
+                val sms = uiState.messages.find { msg -> msg.id == route.smsId }
 
                 TeachingScreen(
                     viewModel = viewModel,
-                    initialSms = null, // TODO: Pass initial SMS when navigating from SMS list
+                    initialSms = sms,
                     onNavigateBack = { navController.popBackStack() },
                 )
             }
 
             composable<Route.CategoryTeaching> {
-                val spendingViewModel: SpendingViewModel = koinViewModel()
+                val spendingViewModel: SpendingViewModel = koinViewModel(
+                    key = "spending_summary_vm"
+                )
 
                 // Get all transactions from spending summary
                 val transactions = spendingViewModel.uiState.value.summary?.byCategory

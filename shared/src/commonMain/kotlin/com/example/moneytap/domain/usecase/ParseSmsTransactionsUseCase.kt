@@ -1,6 +1,7 @@
 package com.example.moneytap.domain.usecase
 
 import com.example.moneytap.data.parser.BankSmsParserFactory
+import com.example.moneytap.domain.Constants
 import com.example.moneytap.domain.model.FieldType
 import com.example.moneytap.domain.model.SmsMessage
 import com.example.moneytap.domain.model.TransactionInfo
@@ -30,17 +31,31 @@ class ParseSmsTransactionsUseCase(
      * Retrieves and parses transaction SMS messages from the inbox.
      *
      * @param limit Maximum number of SMS messages to retrieve
+     * @param excludeIds Set of SMS IDs to skip (already processed)
      * @return [Result] containing a list of parsed transactions, or an error
      */
-    suspend operator fun invoke(limit: Int = 100): Result<List<TransactionInfo>> {
+    suspend operator fun invoke(
+        limit: Int = Constants.DEFAULT_SMS_LIMIT,
+        excludeIds: Set<Long> = emptySet(),
+    ): Result<List<TransactionInfo>> {
         return smsRepository.getInboxMessages(limit).map { messages ->
             println("DEBUG: Total SMS messages fetched: ${messages.size}")
-            messages.take(10).forEach { sms ->
+            
+            // Filter out already-processed messages BEFORE parsing
+            val newMessages = if (excludeIds.isNotEmpty()) {
+                messages.filter { it.id !in excludeIds }
+            } else {
+                messages
+            }
+            println("DEBUG: Filtering out ${messages.size - newMessages.size} already-processed messages")
+            println("DEBUG: Parsing ${newMessages.size} new messages")
+            
+            newMessages.take(10).forEach { sms ->
                 val hasParser = BankSmsParserFactory.getParser(sms.sender) != null
                 val canGeneric = BankSmsParserFactory.canGenericParse(sms.body)
                 println("DEBUG: SMS sender='${sms.sender}', hasParser=$hasParser, canGenericParse=$canGeneric")
             }
-            val parsed = messages.mapNotNull { sms -> parseMessage(sms) }
+            val parsed = newMessages.mapNotNull { sms -> parseMessage(sms) }
             println("DEBUG: Parsed transactions: ${parsed.size}")
             parsed
         }

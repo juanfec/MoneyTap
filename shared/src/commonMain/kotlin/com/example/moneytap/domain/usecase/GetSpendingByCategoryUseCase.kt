@@ -1,5 +1,6 @@
 package com.example.moneytap.domain.usecase
 
+import com.example.moneytap.domain.Constants
 import com.example.moneytap.domain.model.CategorizedTransaction
 import com.example.moneytap.domain.model.Category
 import com.example.moneytap.domain.model.CategorySpending
@@ -26,28 +27,33 @@ class GetSpendingByCategoryUseCase(
     /**
      * Retrieves and aggregates spending by category.
      *
-     * Parses SMS messages, checks which ones are already stored in the database
-     * by their SMS ID, categorizes only the new ones, saves them, and returns
-     * an aggregated summary of all transactions (existing + newly categorized).
+     * Optimized to skip parsing SMS messages that are already in the database.
+     * Only new (unseen) SMS messages are parsed and categorized.
      *
      * @param limit Maximum number of SMS messages to process
      * @param spendingOnly If true, only includes DEBIT/WITHDRAWAL. If false, includes all transactions.
      * @return [Result] containing the spending summary, or an error
      */
     suspend operator fun invoke(
-        limit: Int = 100,
+        limit: Int = Constants.DEFAULT_SMS_LIMIT,
         spendingOnly: Boolean = false,
     ): Result<SpendingSummary> {
-        return parseSmsTransactionsUseCase(limit).map { parsed ->
-            val storedIds = transactionRepository.getStoredSmsIds()
-            val newTransactions = parsed.filter { it.smsId !in storedIds }
+        // Get already stored SMS IDs first to avoid re-parsing
+        val storedIds = transactionRepository.getStoredSmsIds()
+        println("DEBUG GetSpendingByCategory: ${storedIds.size} SMS IDs already in database")
 
-            if (newTransactions.isNotEmpty()) {
-                val categorized = categorizeTransactionsUseCase(newTransactions)
+        // Parse only new SMS messages (those not in database)
+        return parseSmsTransactionsUseCase(limit, storedIds).map { parsed ->
+            println("DEBUG GetSpendingByCategory: Parsed ${parsed.size} NEW transactions from SMS")
+
+            if (parsed.isNotEmpty()) {
+                val categorized = categorizeTransactionsUseCase(parsed)
                 transactionRepository.insertTransactions(categorized)
+                println("DEBUG GetSpendingByCategory: Saved ${categorized.size} categorized transactions")
             }
 
             val allTransactions = transactionRepository.getAllTransactions()
+            println("DEBUG GetSpendingByCategory: Total ${allTransactions.size} transactions in database")
             aggregateSpending(allTransactions, spendingOnly)
         }
     }
@@ -80,13 +86,17 @@ class GetSpendingByCategoryUseCase(
             .sortedByDescending { it.value.totalAmount }
             .associate { it.key to it.value }
 
+        val totalSpending = filteredTransactions
+            .filter { !it.category.excludeFromSpending }
+            .sumOf { it.transaction.amount }
+
         return SpendingSummary(
-            totalSpending = filteredTransactions.sumOf { it.transaction.amount },
+            totalSpending = totalSpending,
             byCategory = sortedByCategory,
             transactionCount = filteredTransactions.size,
         )
     }
 
     private fun isSpendingTransaction(transaction: CategorizedTransaction): Boolean =
-        transaction.transaction.type in listOf(TransactionType.DEBIT, TransactionType.WITHDRAWAL)
+        transaction.transaction.type in listOf(TransactionType.DEBIT, TransactionType.WITHDRAWAL, TransactionType.TRANSFER)
 }

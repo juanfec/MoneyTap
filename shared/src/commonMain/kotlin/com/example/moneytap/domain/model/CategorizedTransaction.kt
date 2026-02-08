@@ -7,12 +7,14 @@ package com.example.moneytap.domain.model
  * @property category The assigned spending category
  * @property confidence Confidence score (0.0 to 1.0) of the categorization
  * @property matchType How the category was determined
+ * @property userCorrected Whether the user manually changed the category
  */
 data class CategorizedTransaction(
     val transaction: TransactionInfo,
     val category: Category,
     val confidence: Double,
     val matchType: MatchType,
+    val userCorrected: Boolean = false,
 )
 
 /**

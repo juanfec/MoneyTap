@@ -58,11 +58,20 @@ SELECT
     SUM(CASE WHEN type = 'CREDIT' THEN amount ELSE 0 END) AS income
 FROM TransactionEntity
 GROUP BY month
-ORDER BY month DESC
-LIMIT 12;
+ORDER BY month DESC;
 
 getTransactionCount:
 SELECT COUNT(*) FROM TransactionEntity;
 
 deleteAllTransactions:
 DELETE FROM TransactionEntity;
+
+updateCategory:
+UPDATE TransactionEntity
+SET category = ?, matchType = 'USER_RULE', confidence = 1.0, userCorrected = 1
+WHERE smsId = ?;
+
+updateType:
+UPDATE TransactionEntity
+SET type = ?, userCorrected = 1
+WHERE smsId = ?;

@@ -10,9 +10,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -20,11 +25,15 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -34,6 +43,7 @@ import com.example.moneytap.domain.model.CategorizedTransaction
 import com.example.moneytap.domain.model.Category
 import com.example.moneytap.domain.model.TransactionType
 import com.example.moneytap.presentation.viewmodel.SpendingViewModel
+import com.example.moneytap.ui.component.CategoryPickerBottomSheet
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.math.roundToInt
@@ -45,12 +55,13 @@ fun TransactionDetailScreen(
     transactionIndex: Int,
     viewModel: SpendingViewModel,
     onNavigateBack: () -> Unit,
+    onTeachPattern: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val category = Category.entries.find { it.name == categoryName }
-    val transaction = uiState.summary?.byCategory
+    val transaction = uiState.monthlySummary?.byCategory
         ?.get(category)
         ?.transactions
         ?.getOrNull(transactionIndex)
@@ -74,6 +85,13 @@ fun TransactionDetailScreen(
         if (transaction != null) {
             TransactionDetailContent(
                 transaction = transaction,
+                onTeachPattern = onTeachPattern,
+                onChangeCategory = { smsId, newCategory ->
+                    viewModel.changeTransactionCategory(smsId, newCategory)
+                },
+                onChangeType = { smsId, newType ->
+                    viewModel.changeTransactionType(smsId, newType)
+                },
                 modifier = Modifier.padding(paddingValues),
             )
         } else {
@@ -96,9 +114,14 @@ fun TransactionDetailScreen(
 @Composable
 private fun TransactionDetailContent(
     transaction: CategorizedTransaction,
+    onTeachPattern: (Long) -> Unit,
+    onChangeCategory: (Long, Category) -> Unit,
+    onChangeType: (Long, TransactionType) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val txInfo = transaction.transaction
+    var showCategoryPicker by remember { mutableStateOf(false) }
+    var showTypePicker by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -119,6 +142,88 @@ private fun TransactionDetailContent(
         item(key = "raw_message_card") {
             RawMessageCard(rawMessage = txInfo.rawMessage)
         }
+
+        // User corrected badge
+        if (transaction.userCorrected) {
+            item(key = "user_corrected_badge") {
+                AssistChip(
+                    onClick = {},
+                    label = { Text("Manually categorized") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    },
+                )
+            }
+        }
+
+        item(key = "change_category_button") {
+            OutlinedButton(
+                onClick = { showCategoryPicker = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text("Change Category")
+            }
+        }
+
+        item(key = "change_type_button") {
+            OutlinedButton(
+                onClick = { showTypePicker = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text("Change Transaction Type")
+            }
+        }
+
+        item(key = "teach_pattern_button") {
+            OutlinedButton(
+                onClick = { onTeachPattern(txInfo.smsId) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.School,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text("Teach Pattern for This SMS")
+            }
+        }
+    }
+
+    // Category picker bottom sheet
+    if (showCategoryPicker) {
+        CategoryPickerBottomSheet(
+            currentCategory = transaction.category,
+            onCategorySelected = { newCategory ->
+                onChangeCategory(txInfo.smsId, newCategory)
+            },
+            onDismiss = { showCategoryPicker = false },
+        )
+    }
+
+    // Transaction type picker bottom sheet
+    if (showTypePicker) {
+        TransactionTypePickerBottomSheet(
+            currentType = txInfo.type,
+            onTypeSelected = { newType ->
+                onChangeType(txInfo.smsId, newType)
+                showTypePicker = false
+            },
+            onDismiss = { showTypePicker = false },
+        )
     }
 }
 
@@ -314,4 +419,66 @@ private fun formatFullDateTime(instant: kotlinx.datetime.Instant): String {
     return "${localDateTime.dayOfMonth} $month ${localDateTime.year}, " +
         "${localDateTime.hour.toString().padStart(2, '0')}:" +
         "${localDateTime.minute.toString().padStart(2, '0')}"
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TransactionTypePickerBottomSheet(
+    currentType: TransactionType,
+    onTypeSelected: (TransactionType) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            Text(
+                text = "Select Transaction Type",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
+
+            TransactionType.entries.forEach { type ->
+                Card(
+                    onClick = { onTypeSelected(type) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    colors = if (type == currentType) {
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        )
+                    } else {
+                        CardDefaults.cardColors()
+                    },
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = type.displayName,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        if (type == currentType) {
+                            Text(
+                                text = "Current",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
 }

@@ -8,11 +8,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -25,6 +30,7 @@ import kotlinx.datetime.toLocalDateTime
 @Composable
 fun SmsMessageCard(
     message: SmsMessage,
+    onTeachPattern: ((SmsMessage) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -45,6 +51,7 @@ fun SmsMessageCard(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = message.sender,
@@ -68,6 +75,24 @@ fun SmsMessageCard(
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
+
+            // Always show button for debugging
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = {
+                    onTeachPattern?.invoke(message) ?: run {
+                        println("DEBUG: onTeachPattern is NULL!")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.School,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text(if (onTeachPattern != null) "Teach Pattern" else "Teach Pattern (DISABLED)")
+            }
         }
     }
 }

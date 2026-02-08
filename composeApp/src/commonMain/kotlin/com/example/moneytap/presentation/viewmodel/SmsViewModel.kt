@@ -3,6 +3,7 @@ package com.example.moneytap.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.moneytap.data.datasource.local.PermissionHandler
+import com.example.moneytap.domain.Constants
 import com.example.moneytap.domain.model.PermissionState
 import com.example.moneytap.domain.model.SmsError
 import com.example.moneytap.domain.model.SmsException
@@ -85,7 +86,7 @@ class SmsViewModel(
         }
     }
 
-    fun loadMessages(limit: Int = 100) {
+    fun loadMessages(limit: Int = Constants.DEFAULT_SMS_LIMIT) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 

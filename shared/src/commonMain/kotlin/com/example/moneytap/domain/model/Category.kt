@@ -10,6 +10,7 @@ enum class PrimaryCategory(val displayName: String) {
     BANK_FEES("Bank Fees"),
     MEDICAL("Medical"),
     GENERAL_MERCHANDISE("General"),
+    INTERNAL_TRANSFERS("Transfers"),
 }
 
 /**
@@ -19,6 +20,7 @@ enum class PrimaryCategory(val displayName: String) {
 enum class Category(
     val primaryCategory: PrimaryCategory,
     val displayName: String,
+    val excludeFromSpending: Boolean = false,
 ) {
     GROCERIES(PrimaryCategory.FOOD_AND_DRINK, "Groceries"),
     RESTAURANT(PrimaryCategory.FOOD_AND_DRINK, "Restaurant"),
@@ -31,5 +33,6 @@ enum class Category(
     CUATRO_X_MIL(PrimaryCategory.BANK_FEES, "4x1000"),
     EPS_HEALTH(PrimaryCategory.MEDICAL, "EPS/Health"),
     PHARMACY(PrimaryCategory.MEDICAL, "Pharmacy"),
+    CREDIT_CARD_PAYMENT(PrimaryCategory.INTERNAL_TRANSFERS, "Credit Card Payment", excludeFromSpending = true),
     UNCATEGORIZED(PrimaryCategory.GENERAL_MERCHANDISE, "Uncategorized"),
 }

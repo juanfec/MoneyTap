@@ -47,7 +47,7 @@ fun CategoryTransactionsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val category = Category.entries.find { it.name == categoryName }
-    val categorySpending = uiState.summary?.byCategory?.get(category)
+    val categorySpending = uiState.monthlySummary?.byCategory?.get(category)
 
     Scaffold(
         topBar = {

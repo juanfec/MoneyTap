@@ -40,6 +40,7 @@ fun SmsInboxScreen(
     viewModel: SmsViewModel,
     onRequestPermission: () -> Unit,
     onOpenSettings: () -> Unit,
+    onTeachPattern: (com.example.moneytap.domain.model.SmsMessage) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -70,6 +71,7 @@ fun SmsInboxScreen(
             onRequestPermission = { viewModel.checkPermission() },
             onOpenSettings = onOpenSettings,
             onRefresh = { viewModel.refresh() },
+            onTeachPattern = onTeachPattern,
             modifier = Modifier.padding(paddingValues),
         )
     }
@@ -81,6 +83,7 @@ private fun SmsInboxContent(
     onRequestPermission: () -> Unit,
     onOpenSettings: () -> Unit,
     onRefresh: () -> Unit,
+    onTeachPattern: (com.example.moneytap.domain.model.SmsMessage) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -130,6 +133,7 @@ private fun SmsInboxContent(
                     ) { message ->
                         SmsMessageCard(
                             message = message,
+                            onTeachPattern = onTeachPattern,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }

@@ -119,6 +119,31 @@ class TransactionRepositoryImpl(
         }
     }
 
+    override suspend fun getTransactionBySmsId(smsId: Long): CategorizedTransaction? =
+        withContext(Dispatchers.Default) {
+            queries.getTransactionBySmsId(smsId).executeAsOneOrNull()?.let { entity ->
+                mapEntityToDomain(entity)
+            }
+        }
+
+    override suspend fun updateTransactionCategory(smsId: Long, newCategory: Category) {
+        withContext(Dispatchers.Default) {
+            queries.updateCategory(
+                category = newCategory.name,
+                smsId = smsId,
+            )
+        }
+    }
+
+    override suspend fun updateTransactionType(smsId: Long, newType: TransactionType) {
+        withContext(Dispatchers.Default) {
+            queries.updateType(
+                type = newType.name,
+                smsId = smsId,
+            )
+        }
+    }
+
     private fun mapEntityToDomain(
         entity: com.example.moneytap.data.database.TransactionEntity,
     ): CategorizedTransaction {
@@ -144,6 +169,7 @@ class TransactionRepositoryImpl(
             confidence = entity.confidence,
             matchType = MatchType.entries.find { it.name == entity.matchType }
                 ?: MatchType.DEFAULT,
+            userCorrected = entity.userCorrected != 0L,
         )
     }
 }

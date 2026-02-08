@@ -36,6 +36,8 @@ import com.example.moneytap.presentation.state.SpendingUiState
 import com.example.moneytap.presentation.viewmodel.SpendingEvent
 import com.example.moneytap.presentation.viewmodel.SpendingViewModel
 import com.example.moneytap.ui.component.CategorySpendingCard
+import com.example.moneytap.ui.component.MonthSelector
+import com.example.moneytap.ui.component.MonthlyBalanceCard
 import com.example.moneytap.ui.component.PermissionRequestCard
 import kotlin.math.roundToInt
 
@@ -60,10 +62,6 @@ fun SpendingSummaryScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.checkPermission()
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -78,6 +76,8 @@ fun SpendingSummaryScreen(
             onOpenSettings = onOpenSettings,
             onRefresh = { viewModel.refresh() },
             onCategoryClick = onCategoryClick,
+            onPreviousMonth = { viewModel.previousMonth() },
+            onNextMonth = { viewModel.nextMonth() },
             modifier = Modifier.padding(paddingValues),
         )
     }
@@ -90,6 +90,8 @@ private fun SpendingSummaryContent(
     onOpenSettings: () -> Unit,
     onRefresh: () -> Unit,
     onCategoryClick: (categoryName: String) -> Unit,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -122,11 +124,13 @@ private fun SpendingSummaryContent(
                     modifier = Modifier.align(Alignment.Center),
                 )
             }
-            uiState.summary != null && uiState.summary.transactionCount > 0 -> {
+            uiState.monthlySummary != null && uiState.monthlySummary.transactionCount > 0 -> {
                 SpendingListContent(
-                    summary = uiState.summary,
+                    uiState = uiState,
                     onRefresh = onRefresh,
                     onCategoryClick = onCategoryClick,
+                    onPreviousMonth = onPreviousMonth,
+                    onNextMonth = onNextMonth,
                 )
             }
             else -> {
@@ -141,21 +145,47 @@ private fun SpendingSummaryContent(
 
 @Composable
 private fun SpendingListContent(
-    summary: SpendingSummary,
+    uiState: SpendingUiState,
     onRefresh: () -> Unit,
     onCategoryClick: (categoryName: String) -> Unit,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val monthlySummary = uiState.monthlySummary ?: return
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item(key = "header") {
-            TotalSpendingCard(summary = summary)
+        // Month selector header
+        item(key = "month_selector") {
+            uiState.selectedMonth?.let { month ->
+                MonthSelector(
+                    selectedMonth = month,
+                    canGoBack = run {
+                        val available = uiState.availableMonths
+                        val currentIndex = available.indexOf(month)
+                        currentIndex < available.lastIndex
+                    },
+                    canGoForward = run {
+                        val available = uiState.availableMonths
+                        val currentIndex = available.indexOf(month)
+                        currentIndex > 0
+                    },
+                    onPreviousMonth = onPreviousMonth,
+                    onNextMonth = onNextMonth,
+                )
+            }
         }
 
-        item(key = "title") {
+        // Monthly balance card
+        item(key = "balance_card") {
+            MonthlyBalanceCard(summary = monthlySummary)
+        }
+
+        item(key = "category_title") {
             Text(
                 text = "By Category",
                 style = MaterialTheme.typography.titleMedium,
@@ -165,12 +195,12 @@ private fun SpendingListContent(
         }
 
         items(
-            items = summary.byCategory.values.toList(),
+            items = monthlySummary.byCategory.values.toList(),
             key = { it.category.name },
         ) { categorySpending ->
             CategorySpendingCard(
                 categorySpending = categorySpending,
-                totalSpending = summary.totalSpending,
+                totalSpending = monthlySummary.totalExpenses,
                 onClick = { onCategoryClick(categorySpending.category.name) },
                 modifier = Modifier.fillMaxWidth(),
             )

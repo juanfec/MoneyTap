@@ -12,24 +12,9 @@ MoneyTap is a **Kotlin Multiplatform** project targeting Android, iOS, Desktop (
 
 ## Build Commands
 
-All commands use Gradle. Run from the project root directory.
+All commands use Gradle. Run from the project root directory using `./gradlew <command>`.
 
-**Windows (cmd.exe from any shell):**
-```bash
-cmd.exe /c "cd /d <PROJECT_PATH> && .\gradlew.bat <command>"
-```
-
-**Windows (PowerShell/Terminal):**
-```powershell
-.\gradlew.bat <command>
-```
-
-**Mac/Linux:**
-```bash
-./gradlew <command>
-```
-
-> **Note:** For machine-specific paths and ready-to-use commands, see `CLAUDE.local.md` (not tracked by git).
+> **Note:** On Windows, Git Bash will handle `./gradlew` correctly. Do not use `.\gradlew.bat` or add `--no-daemon` flags.
 
 | Target | Command |
 |--------|---------|

@@ -1,7 +1,9 @@
 package com.example.moneytap.domain.repository
 
 import com.example.moneytap.domain.model.CategorizedTransaction
+import com.example.moneytap.domain.model.Category
 import com.example.moneytap.domain.model.MonthlyTotal
+import com.example.moneytap.domain.model.TransactionType
 import kotlinx.datetime.Instant
 
 /**
@@ -52,4 +54,19 @@ interface TransactionRepository {
      * Deletes all stored transactions.
      */
     suspend fun deleteAllTransactions()
+
+    /**
+     * Returns a single transaction by SMS ID, or null if not found.
+     */
+    suspend fun getTransactionBySmsId(smsId: Long): CategorizedTransaction?
+
+    /**
+     * Updates the category of a transaction and marks it as user-corrected.
+     */
+    suspend fun updateTransactionCategory(smsId: Long, newCategory: Category)
+
+    /**
+     * Updates the type of a transaction (e.g., DEBIT to CREDIT).
+     */
+    suspend fun updateTransactionType(smsId: Long, newType: TransactionType)
 }

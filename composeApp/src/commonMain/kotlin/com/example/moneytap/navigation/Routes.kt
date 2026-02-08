@@ -24,7 +24,7 @@ sealed interface Route {
     ) : Route
 
     @Serializable
-    data object Teaching : Route
+    data class Teaching(val smsId: Long) : Route
 
     @Serializable
     data object CategoryTeaching : Route
